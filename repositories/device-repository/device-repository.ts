@@ -7,6 +7,7 @@
 
 import { AforeAFXKTH } from './devices/afore/af-xk-th-three-phase-hybrid/af-xk-th-three-phase-hybrid';
 import { DeyeSunXKSG01HP3 } from './devices/deye/sun-xk-sg01hp3-eu-am2/sun-xk-sg01hp3-eu-am2';
+import { DeyeSunXKSG04LP3 } from './devices/deye/sun-xk-sg04lp3-eu/sun-xk-sg04lp3-eu';
 import { GrowattTLX } from './devices/growatt/growatt-tl/mic-XXXX-tl';
 import { GrowattTL3X } from './devices/growatt/growatt-tl3/mod-XXXX-tl3';
 import { Device } from './models/device';
@@ -30,6 +31,7 @@ export class DeviceRepository {
     constructor() {
         this.devices.push(new AforeAFXKTH());
         this.devices.push(new DeyeSunXKSG01HP3());
+        this.devices.push(new DeyeSunXKSG04LP3());
         this.devices.push(new GrowattTLX());
         this.devices.push(new GrowattTL3X());
 
