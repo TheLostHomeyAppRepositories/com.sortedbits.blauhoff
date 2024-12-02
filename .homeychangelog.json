@@ -184,5 +184,8 @@
   },
   "2.6.0": {
     "en": "Naming updates"
+  },
+  "2.6.1": {
+    "en": "Add support for BlauHoff Sun *K SG04LP3 EU devices"
   }
 }
