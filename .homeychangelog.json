@@ -187,5 +187,8 @@
   },
   "2.6.1": {
     "en": "Add support for BlauHoff Sun *K SG04LP3 EU devices"
+  },
+  "2.6.2": {
+    "en": "Updated maximum power to 12kw"
   }
 }
