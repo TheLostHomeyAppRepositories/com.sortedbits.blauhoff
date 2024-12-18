@@ -92,7 +92,7 @@
         {
             "type": "range",
             "min": 0,
-            "max": 8000,
+            "max": 12000,
             "name": "powerlimit",
             "label": "W",
             "step": 10,

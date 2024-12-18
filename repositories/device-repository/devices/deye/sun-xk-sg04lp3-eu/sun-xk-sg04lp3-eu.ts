@@ -318,7 +318,7 @@ export class DeyeSunXKSG04LP3 extends Device {
         const { gridcharge, generatorcharge, powerlimit, batterycharge } = args;
 
         const powerLimitNumber = Number(powerlimit);
-        if (powerLimitNumber < 0 || powerLimitNumber > 8000) {
+        if (powerLimitNumber < 0 || powerLimitNumber > 12000) {
             origin.filteredError('Invalid power limit', powerlimit);
             return;
         }
@@ -371,7 +371,7 @@ export class DeyeSunXKSG04LP3 extends Device {
         }
 
         const powerLimitNumber = Number(powerlimit);
-        if (powerLimitNumber < 0 || powerLimitNumber > 8000) {
+        if (powerLimitNumber < 0 || powerLimitNumber > 12000) {
             origin.filteredError('Invalid power limit', powerlimit);
             return;
         }
