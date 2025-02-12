@@ -148,7 +148,16 @@ export const holdingRegisters: ModbusRegister[] = [
     ModbusRegister.scale('measure_temperature.ac', 541, 1, RegisterDataType.UINT16, 0.01),
 
     // battery
-    ModbusRegister.scale('measure_power.battery1', 590, 1, RegisterDataType.INT16, 10),
+    ModbusRegister.scale('measure_power.battery1', 590, 1, RegisterDataType.INT16, 10)
+        .addTransform('measure_power', (value) => {
+            const numberValue = parseFloat(value);
+
+            if (isNaN(numberValue)) {
+                return undefined;
+            }
+
+            return numberValue * -10;
+        }),
 
     ModbusRegister.scale('measure_current.battery1', 591, 1, RegisterDataType.INT16, 0.01),
     ModbusRegister.scale('measure_voltage.battery1', 587, 1, RegisterDataType.INT16, 0.1),

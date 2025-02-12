@@ -67,8 +67,16 @@ export const inputRegisters: ModbusRegister[] = [
     ModbusRegister.default('measure_percentage.bat_soc', 2002, 1, RegisterDataType.UINT16, AccessMode.ReadOnly, {
         validValueMin: 0,
         validValueMax: 100,
+    }).addDefault('measure_battery', {
+        validValueMin: 0,
+        validValueMax: 100,
     }),
     ModbusRegister.default('measure_power.battery', 2007, 2, RegisterDataType.INT32, AccessMode.ReadOnly, {
+        validValueMin: -24100,
+        validValueMax: 24100,
+    }).addTransform('measure_power', (value) => {
+        return value * -1;
+    }, {
         validValueMin: -24100,
         validValueMax: 24100,
     }),

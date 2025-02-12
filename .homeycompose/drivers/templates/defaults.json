@@ -1,5 +1,5 @@
 {
-    "class": "solarpanel",
+    "class": "battery",
     "capabilitiesOptions": {
         "date.record": {
             "title": {
@@ -135,7 +135,6 @@
                 "nl": "Load vermogen"
             }
         },
-
         "measure_power.inverter": {
             "title": {
                 "en": "Inverter power",
@@ -160,7 +159,6 @@
                 "nl": "Batterij 1 vermogen"
             }
         },
-
         "measure_current.battery1": {
             "title": {
                 "en": "Battery 1 current",
@@ -257,7 +255,6 @@
                 "nl": "Dagelijks van grid"
             }
         },
-
         "status_text.sell_solar": {
             "title": {
                 "en": "Sell solar",
@@ -531,6 +528,10 @@
     "energy": {
         "cumulative": true
     },
-    "platforms": ["local"],
-    "connectivity": ["lan"]
+    "platforms": [
+        "local"
+    ],
+    "connectivity": [
+        "lan"
+    ]
 }
