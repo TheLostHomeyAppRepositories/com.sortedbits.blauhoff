@@ -193,5 +193,8 @@
   },
   "2.6.3": {
     "en": "Support Energy tab for Deye and Afore"
+  },
+  "2.6.4": {
+    "en": "Add more support for the energy tab"
   }
 }
