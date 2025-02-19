@@ -1556,7 +1556,7 @@
         }
       },
       "energy": {
-        "cumulative": true
+        "homeBattery": true
       },
       "platforms": [
         "local"
