@@ -196,5 +196,8 @@
   },
   "2.6.4": {
     "en": "Add more support for the energy tab"
+  },
+  "2.6.5": {
+    "en": "Remove cumulative attribute"
   }
 }
