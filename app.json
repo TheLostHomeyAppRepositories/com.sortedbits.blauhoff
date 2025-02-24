@@ -1114,6 +1114,13 @@
           },
           "decimals": 0
         },
+        "measure_voltage.pv2": {
+          "title": {
+            "en": "PV 2 voltage",
+            "nl": "PV 2 voltage"
+          },
+          "decimals": 0
+        },
         "measure_power.charge_instructions": {
           "title": {
             "en": "Charge command power",

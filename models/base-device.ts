@@ -127,6 +127,13 @@ export class BaseDevice extends Homey.Device {
             if (!this.reachable) {
                 this.reachable = true;
             }
+
+            const localTimezone = this.homey.clock.getTimezone();
+            const date = DateTime.now();
+            const localDate = date.setZone(localTimezone);
+
+            await capabilityChange(this, 'date.record', localDate.toFormat('HH:mm:ss'));
+
         }
         if (!battery && this.batteryDevice) {
             (this.batteryDevice as BaseDevice).onDataReceived(value, buffer, parseConfiguration);
@@ -356,12 +363,8 @@ export class BaseDevice extends Homey.Device {
 
         this.runningRequest = true;
 
-        const localTimezone = this.homey.clock.getTimezone();
-        const date = DateTime.now();
-        const localDate = date.setZone(localTimezone);
 
         try {
-            await capabilityChange(this, 'date.record', localDate.toFormat('HH:mm:ss'));
             await this.api.readRegistersInBatch();
         } catch (error) {
             this.filteredError('Error reading registers', error);
