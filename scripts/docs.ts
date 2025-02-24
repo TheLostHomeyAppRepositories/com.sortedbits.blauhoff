@@ -39,15 +39,16 @@ for (const file of driverComposeFiles) {
 const devicesTypesToString = (devicesTypes: DeviceType[]): string => {
     const values = [];
 
-    if (devicesTypes.includes(DeviceType.BATTERY)) {
+    if (devicesTypes.indexOf(DeviceType.BATTERY) > -1) {
         values.push('Battery');
     }
 
-    if (devicesTypes.includes(DeviceType.SOLAR)) {
+    if (devicesTypes.indexOf(DeviceType.SOLAR) > -1) {
         values.push('Inverter');
     }
 
-    return values.join(', ');
+    const result = values.join(', ');
+    return result;
 }
 
 const readFlowInfo = (flowType: string, flowId: string) => {
@@ -147,7 +148,7 @@ brands.forEach((brand) => {
                     output += `| ${config.transformation ? 'Yes' : 'No'}`;
                     output += `| ${config.capabilityId}`;
                     output += `| ${capabilitiesOptions[config.capabilityId]}`;
-                    output += `| ${optionsToRange(config.options)} |`;
+                    output += `| ${optionsToRange(config.options)}`;
                     output += `| ${devicesTypesToString(register.deviceTypes)} |\n`
                 });
             });
@@ -168,7 +169,7 @@ brands.forEach((brand) => {
                     output += `| ${config.transformation ? 'Yes' : 'No'}`;
                     output += `| ${config.capabilityId}`;
                     output += `| ${capabilitiesOptions[config.capabilityId]}`;
-                    output += `| ${optionsToRange(config.options)} |`;
+                    output += `| ${optionsToRange(config.options)}`;
                     output += `| ${devicesTypesToString(register.deviceTypes)} |\n`
                 });
             });
