@@ -25,11 +25,14 @@ export const getBrand = (brandName: string): Brand | undefined => {
  * @param modelId - The model ID of the device.
  * @returns The device model name or a string indicating an unknown device.
  */
-export const getDeviceModelName = (brandName: Brand, modelId: string): string => {
+export const getDeviceModelName = (brandName: Brand, modelId: string, battery: boolean): string => {
     const model = DeviceRepository.getInstance().getDeviceById(modelId);
 
     if (model) {
-        return model.name;
+        if (battery) {
+            return `${model.name} battery`;
+        }
+        return `${model.name} inverter`;
     }
 
     const output = brandName.charAt(0).toUpperCase() + brandName.slice(1);

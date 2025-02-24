@@ -16,7 +16,9 @@ import { DeviceRepository } from '../repositories/device-repository/device-repos
 import { orderModbusRegisters } from '../repositories/device-repository/helpers/order-modbus-registers';
 import { Device } from '../repositories/device-repository/models/device';
 import { AccessMode } from '../repositories/device-repository/models/enum/access-mode';
-import { ModbusRegister, ModbusRegisterParseConfiguration } from '../repositories/device-repository/models/modbus-register';
+import { DeviceType, ModbusRegister, ModbusRegisterParseConfiguration } from '../repositories/device-repository/models/modbus-register';
+import { BaseDriver } from './base-driver';
+import { parse } from 'path';
 
 export class BaseDevice extends Homey.Device {
     private api?: IAPI;
@@ -31,6 +33,9 @@ export class BaseDevice extends Homey.Device {
     private lastValidRequest?: DateTime;
 
     private isInInvalidState: { [id: string]: boolean } = {};
+
+    private batteryDevice?: BaseDevice;
+    private inverterDevice?: BaseDevice;
 
     public logDeviceName = () => {
         return this.getName();
@@ -90,32 +95,41 @@ export class BaseDevice extends Homey.Device {
      * @param register - The Modbus register object.
      * @returns A Promise that resolves when the value is handled.
      */
-    private onDataReceived = async (value: any, buffer: Buffer, parseConfiguration: ModbusRegisterParseConfiguration) => {
-        const result = parseConfiguration.calculateValue(value, buffer, this);
+    onDataReceived = async (value: any, buffer: Buffer, parseConfiguration: ModbusRegisterParseConfiguration) => {
+        const { battery } = this.getData();
 
-        const validationResult = parseConfiguration.validateValue(result, this);
-        if (!validationResult.valid) {
-            this.filteredError('Received invalid value', parseConfiguration.capabilityId, result);
+        const deviceType = battery ? DeviceType.BATTERY : DeviceType.SOLAR;
 
-            if (!this.isInInvalidState[parseConfiguration.capabilityId]) {
-                const c = this.homey.flow.getDeviceTriggerCard('invalid_value_received');
-                await c.trigger(this, { capability: parseConfiguration.capabilityId, value: result });
+        if (parseConfiguration.register.deviceTypes.indexOf(deviceType) > -1) {
+            const result = parseConfiguration.calculateValue(value, buffer, this);
 
-                this.isInInvalidState[parseConfiguration.capabilityId] = true;
+            const validationResult = parseConfiguration.validateValue(result, this);
+            if (!validationResult.valid) {
+                this.filteredError('Received invalid value', parseConfiguration.capabilityId, result);
+
+                if (!this.isInInvalidState[parseConfiguration.capabilityId]) {
+                    const c = this.homey.flow.getDeviceTriggerCard('invalid_value_received');
+                    await c.trigger(this, { capability: parseConfiguration.capabilityId, value: result });
+
+                    this.isInInvalidState[parseConfiguration.capabilityId] = true;
+                }
+                return;
             }
-            return;
+
+            delete this.isInInvalidState[parseConfiguration.capabilityId];
+
+            this.lastValidRequest = DateTime.utc();
+
+            await capabilityChange(this, parseConfiguration.capabilityId, result);
+
+            parseConfiguration.currentValue = result;
+
+            if (!this.reachable) {
+                this.reachable = true;
+            }
         }
-
-        delete this.isInInvalidState[parseConfiguration.capabilityId];
-
-        this.lastValidRequest = DateTime.utc();
-
-        await capabilityChange(this, parseConfiguration.capabilityId, result);
-
-        parseConfiguration.currentValue = result;
-
-        if (!this.reachable) {
-            this.reachable = true;
+        if (!battery && this.batteryDevice) {
+            (this.batteryDevice as BaseDevice).onDataReceived(value, buffer, parseConfiguration);
         }
 
         await this.updateDeviceAvailability(true);
@@ -142,22 +156,28 @@ export class BaseDevice extends Homey.Device {
      * Initializes the capabilities of the Modbus device based on the provided definition.
      * @param definition The Modbus device definition.
      */
-    private initializeCapabilities = async () => {
+    private initializeCapabilities = async (battery: boolean) => {
         const inputRegisters = orderModbusRegisters(this.device.inputRegisters);
 
+        const deviceType = battery ? DeviceType.BATTERY : DeviceType.SOLAR;
+
         for (const register of inputRegisters) {
-            if (register.accessMode !== AccessMode.WriteOnly) {
-                for (const configuration of register.parseConfigurations) {
-                    await addCapabilityIfNotExists(this, configuration.capabilityId);
+            if (register.deviceTypes.indexOf(deviceType) > -1) {
+                if (register.accessMode !== AccessMode.WriteOnly) {
+                    for (const configuration of register.parseConfigurations) {
+                        await addCapabilityIfNotExists(this, configuration.capabilityId);
+                    }
                 }
             }
         }
 
         const holdingRegisters = orderModbusRegisters(this.device.holdingRegisters);
         for (const register of holdingRegisters) {
-            if (register.accessMode !== AccessMode.WriteOnly) {
-                for (const configuration of register.parseConfigurations) {
-                    await addCapabilityIfNotExists(this, configuration.capabilityId);
+            if (register.deviceTypes.indexOf(deviceType) > -1) {
+                if (register.accessMode !== AccessMode.WriteOnly) {
+                    for (const configuration of register.parseConfigurations) {
+                        await addCapabilityIfNotExists(this, configuration.capabilityId);
+                    }
                 }
             }
         }
@@ -169,7 +189,11 @@ export class BaseDevice extends Homey.Device {
      */
     private connect = async () => {
         const { host, port, unitId, solarman, serial, enabled } = this.getSettings();
-        const { deviceType, modelId } = this.getData();
+        const { deviceType, modelId, battery } = this.getData();
+
+        if (battery) {
+            return;
+        }
 
         if (this.readRegisterTimeout) {
             clearTimeout(this.readRegisterTimeout);
@@ -177,7 +201,6 @@ export class BaseDevice extends Homey.Device {
 
         this.filteredLog('ModbusDevice', host, port, unitId, deviceType, modelId, enabled);
 
-        await this.initializeCapabilities();
 
         this.api = solarman ? new Solarman(this, this.device, host, serial, 8899, 1) : new ModbusAPI(this, host, port, unitId, this.device);
         this.api.setOnDataReceived(this.onDataReceived);
@@ -197,13 +220,34 @@ export class BaseDevice extends Homey.Device {
     async onInit() {
         await super.onInit();
 
-        const { modelId } = this.getData();
+        const { modelId, battery, batteryId } = this.getData();
+
+        if (battery) {
+            this.setClass('battery')
+            this.setEnergy({
+                'homeBattery': true
+            })
+        } else {
+            this.setClass('solarpanel')
+        }
 
         const result = DeviceRepository.getInstance().getDeviceById(modelId);
 
         if (!result) {
             this.filteredError('Unknown device type', modelId);
             throw new Error('Unknown device type');
+        }
+
+        if (!battery) {
+            if (batteryId) {
+                this.tryConnectBattery();
+            } else if (!batteryId) {
+                this.log('No batteryId defined')
+            }
+        }
+
+        if (battery) {
+            this.tryConnectInverter();
         }
 
         this.device = result;
@@ -226,10 +270,57 @@ export class BaseDevice extends Homey.Device {
         this.enabled = enabled;
 
         if (this.enabled) {
-            await this.connect();
+            await this.initializeCapabilities(battery);
+
+            if (!battery) {
+                await this.connect();
+            }
         } else {
             await this.setUnavailable('Device is disabled');
             this.filteredLog('ModbusDevice is disabled');
+        }
+
+    }
+
+    private tryConnectBattery = () => {
+        const { battery } = this.getData();
+        const { removedBattery } = this.getSettings();
+
+        if (removedBattery) {
+            this.log('Battery has been removed from this inverter');
+        }
+
+        if (battery) {
+            return;
+        }
+
+        this.batteryDevice = this.getBattery();
+
+        if (!this.batteryDevice) {
+            this.log('Could not find battery device, retrying');
+
+            this.homey.setTimeout(() => {
+                this.tryConnectBattery();
+            }, 1000);
+        }
+    }
+
+
+    private tryConnectInverter = () => {
+        const { battery } = this.getData();
+
+        if (!battery) {
+            return;
+        }
+
+        this.inverterDevice = this.getInverter();
+
+        if (!this.inverterDevice) {
+            this.log('Could not find inverter device, retrying');
+
+            this.homey.setTimeout(() => {
+                this.tryConnectInverter();
+            }, 1000);
         }
     }
 
@@ -342,14 +433,22 @@ export class BaseDevice extends Homey.Device {
      * onDeleted is called when the user deleted the device.
      */
     async onDeleted() {
-        this.filteredLog('ModbusDevice has been deleted');
+        const { battery, batteryId, id } = this.getData();
 
-        if (this.readRegisterTimeout) {
-            clearTimeout(this.readRegisterTimeout);
-        }
+        if (!battery && batteryId) {
+            this.filteredLog('ModbusDevice has been deleted');
 
-        if (this.api?.isConnected()) {
-            await this.api?.disconnect();
+            if (this.readRegisterTimeout) {
+                clearTimeout(this.readRegisterTimeout);
+            }
+
+            if (this.api?.isConnected()) {
+                await this.api?.disconnect();
+            }
+
+            await (this.driver as BaseDriver).deleteBattery(batteryId);
+        } else if (battery) {
+            await (this.driver as BaseDriver).removeBattery(id);
         }
     }
 
@@ -362,6 +461,14 @@ export class BaseDevice extends Homey.Device {
      * @memberof BaseDevice
      */
     callAction = async (action: string, args: any, retryCount: number = 0) => {
+        const { battery, batteryId, id } = this.getData();
+
+        if (battery) {
+            this.inverterDevice?.callAction(action, args, retryCount);
+            return;
+        }
+
+
         if (retryCount > 3) {
             this.filteredError('Retry count exceeded');
             this.runningRequest = false;
@@ -409,4 +516,36 @@ export class BaseDevice extends Homey.Device {
             this.filteredError('No args.device.device found');
         }
     };
+
+    getBattery = (): BaseDevice | undefined => {
+        const { battery, batteryId } = this.getData();
+
+        if (battery) {
+            return this;
+        }
+
+        const devices = this.driver.getDevices().filter(d => {
+            const { id, battery } = d.getData();
+
+            return (battery && batteryId === id);
+        });
+
+        return devices?.length ? devices[0] as BaseDevice : undefined;
+    }
+
+    getInverter = (): BaseDevice | undefined => {
+        const { battery, id } = this.getData();
+
+        if (!battery) {
+            return this;
+        }
+
+        const devices = this.driver.getDevices().filter(d => {
+            const { batteryId, battery } = d.getData();
+
+            return (!battery && batteryId === id);
+        });
+
+        return devices?.length ? devices[0] as BaseDevice : undefined;
+    }
 }

@@ -16,7 +16,7 @@ import { inputRegisters } from './input-registers';
 
 export class AforeAFXKTH extends Device {
     constructor() {
-        super('af-xk-th-three-phase-hybrid', Brand.Afore, 'BlauHoff AF XK-TH', 'BlauHoff Afore AF XK-TH Three Phase Hybrid Inverter Series');
+        super('af-xk-th-three-phase-hybrid', Brand.Afore, 'BlauHoff AF XK-TH', 'BlauHoff Afore AF XK-TH Three Phase Hybrid Inverter Series', true);
 
         this.supportsSolarman = true;
         this.deprecatedCapabilities = ['status_text.batter_state'];

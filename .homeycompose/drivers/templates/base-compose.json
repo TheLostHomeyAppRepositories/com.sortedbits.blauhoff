@@ -4,7 +4,10 @@
         "large": "{{driverAssetsPath}}/images/large.jpg",
         "xlarge": "{{driverAssetsPath}}/images/xlarge.jpg"
     },
-    "capabilities": ["readable_boolean.device_status"],
+    "capabilities": [
+        "readable_boolean.device_status",
+        "measure_power"
+    ],
     "pair": [
         {
             "id": "device_type"
@@ -32,5 +35,6 @@
             "id": "add_devices",
             "template": "add_devices"
         }
-    ]
+    ],
+    "class": "battery"
 }

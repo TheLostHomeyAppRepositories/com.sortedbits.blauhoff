@@ -13,6 +13,11 @@ import { RegisterType } from './enum/register-type';
 
 export type Transformation = (value: any, buffer: Buffer, log: IBaseLogger) => any;
 
+export enum DeviceType {
+    SOLAR,
+    BATTERY
+}
+
 export interface ModbusRegisterOptions {
     validValueMin?: number;
     validValueMax?: number;
@@ -66,7 +71,6 @@ export class ModbusRegisterParseConfiguration {
 
         return result;
     }
-
     validateValue(value: any, log: IBaseLogger): ValidationResult {
         if (this.register.dataType === RegisterDataType.STRING) {
             return { valid: true };
@@ -116,16 +120,18 @@ export class ModbusRegister {
     registerType: RegisterType = RegisterType.Input;
 
     parseConfigurations: ModbusRegisterParseConfiguration[] = [];
+    deviceTypes: DeviceType[] = [];
 
     hasCapability(capabilityId: string): boolean {
         return this.parseConfigurations.some((config) => config.capabilityId === capabilityId);
     }
 
-    constructor(address: number, length: number, dataType: RegisterDataType, accessMode: AccessMode = AccessMode.ReadOnly) {
+    constructor(address: number, length: number, dataType: RegisterDataType, accessMode: AccessMode = AccessMode.ReadOnly, deviceTypes?: DeviceType[]) {
         this.address = address;
         this.length = length;
         this.dataType = dataType;
         this.accessMode = accessMode;
+        this.deviceTypes = deviceTypes ?? [DeviceType.BATTERY, DeviceType.SOLAR];
     }
 
     addDefault = (capabilityId: string, options?: ModbusRegisterOptions): ModbusRegister => {
@@ -172,8 +178,9 @@ export class ModbusRegister {
         transformation: Transformation,
         accessMode: AccessMode = AccessMode.ReadOnly,
         options: ModbusRegisterOptions = {},
+        devicesTypes: DeviceType[] = [DeviceType.SOLAR]
     ) {
-        return new ModbusRegister(address, length, dataType, accessMode).addTransform(capabilityId, transformation, options);
+        return new ModbusRegister(address, length, dataType, accessMode, devicesTypes).addTransform(capabilityId, transformation, options);
     }
 
     static default(
@@ -183,8 +190,9 @@ export class ModbusRegister {
         dataType: RegisterDataType,
         accessMode: AccessMode = AccessMode.ReadOnly,
         options: ModbusRegisterOptions = {},
+        devicesTypes: DeviceType[] = [DeviceType.SOLAR]
     ) {
-        return new ModbusRegister(address, length, dataType, accessMode).addDefault(capabilityId, options);
+        return new ModbusRegister(address, length, dataType, accessMode, devicesTypes).addDefault(capabilityId, options);
     }
 
     static scale(
@@ -195,7 +203,23 @@ export class ModbusRegister {
         scale: number,
         accessMode: AccessMode = AccessMode.ReadOnly,
         options: ModbusRegisterOptions = {},
+        devicesTypes: DeviceType[] = [DeviceType.SOLAR]
     ) {
-        return new ModbusRegister(address, length, dataType, accessMode).addScale(capabilityId, scale, options);
+        return new ModbusRegister(address, length, dataType, accessMode, devicesTypes).addScale(capabilityId, scale, options);
     }
+}
+
+interface ModbusRegisterCapabilityData {
+    capabilityId: string;
+    address: number;
+    length: number;
+    dataType: RegisterDataType;
+}
+
+interface ModbusRegisterParameters {
+    capability: ModbusRegisterCapabilityData;
+    accessMode: AccessMode;
+    options: ModbusRegisterOptions;
+    deviceTypes: DeviceType[];
+    tranform?: Transformation;
 }

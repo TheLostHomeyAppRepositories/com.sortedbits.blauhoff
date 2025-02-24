@@ -1,5 +1,5 @@
 {
-    "class": "battery",
+    "class": "solarpanel",
     "capabilitiesOptions": {
         "date.record": {
             "title": {
@@ -524,9 +524,6 @@
                 "nl": "ToU Tijd 6"
             }
         }
-    },
-    "energy": {
-        "homeBattery": true
     },
     "platforms": [
         "local"

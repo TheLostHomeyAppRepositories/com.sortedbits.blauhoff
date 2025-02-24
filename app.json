@@ -999,7 +999,8 @@
         "xlarge": "/drivers/blauhoff-modbus/assets/images/xlarge.jpg"
       },
       "capabilities": [
-        "readable_boolean.device_status"
+        "readable_boolean.device_status",
+        "measure_power"
       ],
       "pair": [
         {
@@ -1029,7 +1030,7 @@
           "template": "add_devices"
         }
       ],
-      "class": "battery",
+      "class": "solarpanel",
       "capabilitiesOptions": {
         "date.record": {
           "title": {
@@ -1555,9 +1556,6 @@
           }
         }
       },
-      "energy": {
-        "homeBattery": true
-      },
       "platforms": [
         "local"
       ],
@@ -1566,6 +1564,9 @@
       ],
       "name": {
         "en": "BlauHoff Hybrid Inverter"
+      },
+      "energy": {
+        "homeBattery": true
       },
       "id": "blauhoff-modbus",
       "settings": [

@@ -2,5 +2,11 @@
     "name": {
         "en": "BlauHoff Hybrid Inverter"
     },
-    "$extends": ["base-compose", "defaults"]
+    "energy": {
+        "homeBattery": true
+    },
+    "$extends": [
+        "base-compose",
+        "defaults"
+    ]
 }

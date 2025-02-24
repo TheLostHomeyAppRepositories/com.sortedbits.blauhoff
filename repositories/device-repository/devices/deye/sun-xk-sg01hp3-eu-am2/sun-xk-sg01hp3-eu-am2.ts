@@ -15,7 +15,7 @@ import { holdingRegisters } from './holding-registers';
 
 export class DeyeSunXKSG01HP3 extends Device {
     constructor() {
-        super('sun-xk-sg01hp3-eu-am2', Brand.Deye, 'BlauHoff Sun *K SG01HP3 EU AM2', 'BlauHoff Deye Sun *K SG01HP3 EU AM2 Series');
+        super('sun-xk-sg01hp3-eu-am2', Brand.Deye, 'BlauHoff Sun *K SG01HP3 EU AM2', 'BlauHoff Deye Sun *K SG01HP3 EU AM2 Series', true);
 
         this.supportsSolarman = true;
         this.deprecatedCapabilities = ['status_code.work_mode', 'status_code.run_mode'];

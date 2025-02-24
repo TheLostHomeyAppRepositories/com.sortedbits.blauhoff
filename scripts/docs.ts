@@ -10,7 +10,7 @@ import path from 'path';
 import { unitForCapability } from '../helpers/units';
 import { DeviceRepository } from '../repositories/device-repository/device-repository';
 import { orderModbusRegisters } from '../repositories/device-repository/helpers/order-modbus-registers';
-import { ModbusRegisterOptions } from '../repositories/device-repository/models/modbus-register';
+import { DeviceType, ModbusRegisterOptions } from '../repositories/device-repository/models/modbus-register';
 import { getSupportedFlowTypeKeys } from '../repositories/device-repository/models/supported-flows';
 import { findFile } from './modbus/helpers/fs-helpers';
 
@@ -34,6 +34,20 @@ for (const file of driverComposeFiles) {
             }
         }
     }
+}
+
+const devicesTypesToString = (devicesTypes: DeviceType[]): string => {
+    const values = [];
+
+    if (devicesTypes.includes(DeviceType.BATTERY)) {
+        values.push('Battery');
+    }
+
+    if (devicesTypes.includes(DeviceType.SOLAR)) {
+        values.push('Inverter');
+    }
+
+    return values.join(', ');
 }
 
 const readFlowInfo = (flowType: string, flowId: string) => {
@@ -120,8 +134,8 @@ brands.forEach((brand) => {
 
         if (model.inputRegisters.length > 0) {
             output += '### Input Registers\n';
-            output += '| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range |\n';
-            output += '| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- |\n';
+            output += '| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |\n';
+            output += '| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |\n';
             orderModbusRegisters(model.inputRegisters).forEach((register) => {
                 register.parseConfigurations.forEach((config) => {
                     const unit = unitForCapability(config.capabilityId);
@@ -134,14 +148,15 @@ brands.forEach((brand) => {
                     output += `| ${config.capabilityId}`;
                     output += `| ${capabilitiesOptions[config.capabilityId]}`;
                     output += `| ${optionsToRange(config.options)} |\n`;
+                    output += `| ${devicesTypesToString(register.deviceTypes)} |\n`
                 });
             });
         }
 
         if (model.holdingRegisters.length > 0) {
             output += '\n### Holding Registers\n';
-            output += '| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range |\n';
-            output += '| ------- | ------ | --------- | ---- |----- | -------------- | ------------- | --------------- | ----- |\n';
+            output += '| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |\n';
+            output += '| ------- | ------ | --------- | ---- |----- | -------------- | ------------- | --------------- | ----- | ----------- |\n';
             orderModbusRegisters(model.holdingRegisters).forEach((register) => {
                 register.parseConfigurations.forEach((config) => {
                     const unit = unitForCapability(config.capabilityId);
@@ -154,6 +169,7 @@ brands.forEach((brand) => {
                     output += `| ${config.capabilityId}`;
                     output += `| ${capabilitiesOptions[config.capabilityId]}`;
                     output += `| ${optionsToRange(config.options)} |\n`;
+                    output += `| ${devicesTypesToString(register.deviceTypes)} |\n`
                 });
             });
         }

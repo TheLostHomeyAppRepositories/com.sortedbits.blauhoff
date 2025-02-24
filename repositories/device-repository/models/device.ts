@@ -11,6 +11,8 @@ export type DataConverter = (log: IBaseLogger, buffer: Buffer, register: ModbusR
 export class Device {
     private isRunningAction = false;
 
+    public hasBattery: boolean;
+
     /**
      * The converter to use to convert the data read from the device
      *
@@ -91,11 +93,12 @@ export class Device {
      */
     public supportedFlows: SupportedFlows = {};
 
-    constructor(id: string, brand: Brand, name: string, description: string) {
+    constructor(id: string, brand: Brand, name: string, description: string, hasBattery: boolean) {
         this.id = id;
         this.brand = brand;
         this.name = name;
         this.description = description;
+        this.hasBattery = hasBattery;
     }
 
     callAction = async (origin: IBaseLogger, action: string, args: any, api: IAPI): Promise<void> => {

@@ -12,7 +12,7 @@ import { inputRegisters } from './input-registers';
 
 export class GrowattTL3X extends Device {
     constructor() {
-        super('growatt-tl3', Brand.Growatt, 'Growatt 3PH MOD TL3-X series', 'Three phase Growatt string inverter.');
+        super('growatt-tl3', Brand.Growatt, 'Growatt 3PH MOD TL3-X series', 'Three phase Growatt string inverter.', false);
 
         this.supportsSolarman = true;
         this.deprecatedCapabilities = ['measure_power.l1', 'measure_power.l2', 'measure_power.l3'];

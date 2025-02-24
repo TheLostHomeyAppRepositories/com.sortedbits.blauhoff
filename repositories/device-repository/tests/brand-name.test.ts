@@ -13,15 +13,15 @@ describe('brand-name', () => {
     });
 
     test('get-device-model-name with existing model', async () => {
-        const model = getDeviceModelName(Brand.Deye, 'sun-xk-sg01hp3-eu-am2');
+        const model = getDeviceModelName(Brand.Deye, 'sun-xk-sg01hp3-eu-am2', false);
         expect(model).toBe('Deye Sun *K SG01HP3 EU AM2 Series');
     });
 
     test('get-device-model-name with non existing model', async () => {
-        const blauhoff = getDeviceModelName(Brand.Deye, 'non existing model');
+        const blauhoff = getDeviceModelName(Brand.Deye, 'non existing model', false);
         expect(blauhoff).toBe('Unknown Deye device');
 
-        const kstar = getDeviceModelName(Brand.Afore, 'non existing model');
+        const kstar = getDeviceModelName(Brand.Afore, 'non existing model', false);
         expect(kstar).toBe('Unknown Afore device');
     });
 });

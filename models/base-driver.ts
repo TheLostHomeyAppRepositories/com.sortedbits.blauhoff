@@ -13,6 +13,8 @@ import { DeviceRepository } from '../repositories/device-repository/device-repos
 import { getBrand, getDeviceModelName } from '../repositories/device-repository/helpers/brand-name';
 import { Device } from '../repositories/device-repository/models/device';
 import { Brand } from '../repositories/device-repository/models/enum/brand';
+import { ModbusRegisterParseConfiguration } from '../repositories/device-repository/models/modbus-register';
+import { parse } from 'path';
 
 interface DeviceTypeFormData {
     deviceType: string;
@@ -56,21 +58,33 @@ export class BaseDriver extends Homey.Driver {
         this.log('ModbusDriver has been initialized');
     }
 
-    deviceInformationToId = (deviceInformation: ModbusDeviceInformation): string => {
-        return `${this.pairingDeviceBrand}-${this.pairingDeviceModelId}-${deviceInformation.host}-${deviceInformation.port}-${deviceInformation.unitId}-${deviceInformation.solarman}`;
+    deviceInformationToId = (deviceInformation: ModbusDeviceInformation, battery: boolean): string => {
+        return `${this.pairingDeviceBrand}-${this.pairingDeviceModelId}-${deviceInformation.host}-${deviceInformation.port}-${deviceInformation.unitId}-${deviceInformation.solarman}-${battery}`;
     };
 
-    createPairingDevice = (deviceInformation: ModbusDeviceInformation): any => {
+    deviceHasBattery = (deviceInformaiont: ModbusDeviceInformation): boolean => {
+        if (!this.pairingDeviceModelId || !this.pairingDeviceBrand) {
+            throw new Error('pairingDeviceModelId or pairingDeviceBrand is not set');
+        }
+
+        const model = DeviceRepository.getInstance().getDeviceById(this.pairingDeviceModelId);
+
+        return (model !== undefined && model.hasBattery);
+    }
+
+    createPairingDevice = (deviceInformation: ModbusDeviceInformation, battery: boolean): any => {
         if (!this.pairingDeviceModelId || !this.pairingDeviceBrand) {
             throw new Error('pairingDeviceModelId or pairingDeviceBrand is not set');
         }
 
         const result = {
-            name: getDeviceModelName(this.pairingDeviceBrand, this.pairingDeviceModelId),
+            name: getDeviceModelName(this.pairingDeviceBrand, this.pairingDeviceModelId, battery),
             data: {
-                id: this.deviceInformationToId(deviceInformation),
+                id: this.deviceInformationToId(deviceInformation, battery),
                 deviceType: this.pairingDeviceBrand,
                 modelId: this.pairingDeviceModelId,
+                battery: battery,
+                batteryId: !battery ? this.deviceInformationToId(deviceInformation, true) : undefined,
             },
             settings: {
                 host: deviceInformation.host,
@@ -90,7 +104,13 @@ export class BaseDriver extends Homey.Driver {
     onPair = async (session: PairSession) => {
         session.setHandler('list_devices', async () => {
             if (this.modbusDeviceInformation) {
-                return [this.createPairingDevice(this.modbusDeviceInformation!)];
+                const pairingDevices = [this.createPairingDevice(this.modbusDeviceInformation!, false)];
+
+                if (this.deviceHasBattery(this.modbusDeviceInformation)) {
+                    pairingDevices.push(this.createPairingDevice(this.modbusDeviceInformation!, true));
+                }
+
+                return pairingDevices;
             }
             return [];
         });
@@ -183,4 +203,37 @@ export class BaseDriver extends Homey.Driver {
 
         return result;
     };
+
+    onDeviceDataReceived = async (value: any, buffer: Buffer, parseConfiguration: ModbusRegisterParseConfiguration) => {
+
+    }
+
+    deleteBattery = async (batteryId: string) => {
+        const devices = this.getDevices().filter(d => {
+            const { id, battery } = d.getData();
+
+            return (battery && batteryId === id);
+        });
+
+        if (devices?.length) {
+            const d = devices[0];
+            d.setUnavailable('Inverter can not be deleted');
+        }
+    }
+
+    removeBattery = async (id: string) => {
+        const devices = this.getDevices().filter(d => {
+            const { id, batteryId, battery } = d.getData();
+
+            return (!battery && batteryId === id);
+        });
+
+        if (devices?.length) {
+            const d = devices[0];
+
+            d.setSettings({
+                removedBattery: true
+            });
+        }
+    }
 }
