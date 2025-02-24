@@ -156,28 +156,29 @@ export class BaseDevice extends Homey.Device {
      * Initializes the capabilities of the Modbus device based on the provided definition.
      * @param definition The Modbus device definition.
      */
-    private initializeCapabilities = async (battery: boolean) => {
-        const inputRegisters = orderModbusRegisters(this.device.inputRegisters);
+    private initializeCapabilities = async (isBattery: boolean) => {
+        const inputRegisters = this.device.inputRegisters;
+        const holdingRegisters = this.device.holdingRegisters;
 
-        const deviceType = battery ? DeviceType.BATTERY : DeviceType.SOLAR;
+        const deviceType = isBattery ? DeviceType.BATTERY : DeviceType.SOLAR;
 
-        for (const register of inputRegisters) {
-            if (register.deviceTypes.indexOf(deviceType) > -1) {
-                if (register.accessMode !== AccessMode.WriteOnly) {
-                    for (const configuration of register.parseConfigurations) {
-                        await addCapabilityIfNotExists(this, configuration.capabilityId);
-                    }
+        const allRegisters = orderModbusRegisters(inputRegisters.concat(holdingRegisters));
+
+        for (const register of allRegisters) {
+            if (register.deviceTypes.includes(deviceType) && register.accessMode !== AccessMode.WriteOnly) {
+                for (const configuration of register.parseConfigurations) {
+                    this.log(`Adding! [${deviceType}] [${register.deviceTypes}] ${configuration.capabilityId}`);
+                    await addCapabilityIfNotExists(this, configuration.capabilityId);
                 }
             }
         }
 
-        const holdingRegisters = orderModbusRegisters(this.device.holdingRegisters);
-        for (const register of holdingRegisters) {
-            if (register.deviceTypes.indexOf(deviceType) > -1) {
-                if (register.accessMode !== AccessMode.WriteOnly) {
-                    for (const configuration of register.parseConfigurations) {
-                        await addCapabilityIfNotExists(this, configuration.capabilityId);
-                    }
+        const capabilities = this.getCapabilities()
+        for (const capability of capabilities) {
+            if (capability !== 'readable_boolean.device_status' && capability !== 'date.record') {
+                const exists = allRegisters.find(r => r.parseConfigurations.find(p => p.capabilityId == capability) && r.deviceTypes.includes(deviceType));
+                if (!exists) {
+                    await deprecateCapability(this, capability);
                 }
             }
         }
