@@ -147,7 +147,7 @@ brands.forEach((brand) => {
                     output += `| ${config.transformation ? 'Yes' : 'No'}`;
                     output += `| ${config.capabilityId}`;
                     output += `| ${capabilitiesOptions[config.capabilityId]}`;
-                    output += `| ${optionsToRange(config.options)} |\n`;
+                    output += `| ${optionsToRange(config.options)} |`;
                     output += `| ${devicesTypesToString(register.deviceTypes)} |\n`
                 });
             });
@@ -168,7 +168,7 @@ brands.forEach((brand) => {
                     output += `| ${config.transformation ? 'Yes' : 'No'}`;
                     output += `| ${config.capabilityId}`;
                     output += `| ${capabilitiesOptions[config.capabilityId]}`;
-                    output += `| ${optionsToRange(config.options)} |\n`;
+                    output += `| ${optionsToRange(config.options)} |`;
                     output += `| ${devicesTypesToString(register.deviceTypes)} |\n`
                 });
             });
