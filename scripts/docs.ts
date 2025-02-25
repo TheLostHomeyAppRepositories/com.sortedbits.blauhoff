@@ -10,7 +10,7 @@ import path from 'path';
 import { unitForCapability } from '../helpers/units';
 import { DeviceRepository } from '../repositories/device-repository/device-repository';
 import { orderModbusRegisters } from '../repositories/device-repository/helpers/order-modbus-registers';
-import { DeviceType, ModbusRegisterOptions } from '../repositories/device-repository/models/modbus-register';
+import { DeviceType, ModbusRegister, ModbusRegisterOptions } from '../repositories/device-repository/models/modbus-register';
 import { getSupportedFlowTypeKeys } from '../repositories/device-repository/models/supported-flows';
 import { findFile } from './modbus/helpers/fs-helpers';
 
@@ -122,6 +122,32 @@ const optionsToRange = (options: ModbusRegisterOptions) => {
     return '-';
 };
 
+const printRegisters = (title: string, registers: ModbusRegister[]): string => {
+    var output = '';
+
+    output += `### ${title}\n`;
+    output += '| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |\n';
+    output += '| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |\n';
+
+    registers.forEach((register) => {
+        register.parseConfigurations.forEach((config) => {
+            const unit = unitForCapability(config.capabilityId);
+            output += `| ${register.address}`;
+            output += `| ${register.length}`;
+            output += `| ${register.dataType.toString()}`;
+            output += `| ${unit}`;
+            output += `| ${config.scale ?? '-'}`;
+            output += `| ${config.transformation ? 'Yes' : 'No'}`;
+            output += `| ${config.capabilityId}`;
+            output += `| ${capabilitiesOptions[config.capabilityId]}`;
+            output += `| ${optionsToRange(config.options)}`;
+            output += `| ${devicesTypesToString(register.deviceTypes)} |\n`
+        });
+    });
+
+    return output;
+}
+
 brands.forEach((brand) => {
     const models = DeviceRepository.getInstance().getDevicesByBrand(brand);
 
@@ -133,47 +159,10 @@ brands.forEach((brand) => {
         output += `## ${model.name}\n`;
         output += `${model.description}\n\n`;
 
-        if (model.inputRegisters.length > 0) {
-            output += '### Input Registers\n';
-            output += '| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |\n';
-            output += '| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |\n';
-            orderModbusRegisters(model.inputRegisters).forEach((register) => {
-                register.parseConfigurations.forEach((config) => {
-                    const unit = unitForCapability(config.capabilityId);
-                    output += `| ${register.address}`;
-                    output += `| ${register.length}`;
-                    output += `| ${register.dataType.toString()}`;
-                    output += `| ${unit}`;
-                    output += `| ${config.scale ?? '-'}`;
-                    output += `| ${config.transformation ? 'Yes' : 'No'}`;
-                    output += `| ${config.capabilityId}`;
-                    output += `| ${capabilitiesOptions[config.capabilityId]}`;
-                    output += `| ${optionsToRange(config.options)}`;
-                    output += `| ${devicesTypesToString(register.deviceTypes)} |\n`
-                });
-            });
-        }
-
-        if (model.holdingRegisters.length > 0) {
-            output += '\n### Holding Registers\n';
-            output += '| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |\n';
-            output += '| ------- | ------ | --------- | ---- |----- | -------------- | ------------- | --------------- | ----- | ----------- |\n';
-            orderModbusRegisters(model.holdingRegisters).forEach((register) => {
-                register.parseConfigurations.forEach((config) => {
-                    const unit = unitForCapability(config.capabilityId);
-                    output += `| ${register.address}`;
-                    output += `| ${register.length}`;
-                    output += `| ${register.dataType.toString()}`;
-                    output += `| ${unit}`;
-                    output += `| ${config.scale ?? '-'}`;
-                    output += `| ${config.transformation ? 'Yes' : 'No'}`;
-                    output += `| ${config.capabilityId}`;
-                    output += `| ${capabilitiesOptions[config.capabilityId]}`;
-                    output += `| ${optionsToRange(config.options)}`;
-                    output += `| ${devicesTypesToString(register.deviceTypes)} |\n`
-                });
-            });
-        }
+        output += printRegisters('Input Registers Inverter', model.getInputRegisters(DeviceType.SOLAR));
+        output += printRegisters('Input Registers Battery', model.getInputRegisters(DeviceType.BATTERY));
+        output += printRegisters('Holding Registers Inverter', model.getHoldingRegisters(DeviceType.SOLAR));
+        output += printRegisters('Holding Registers Battery', model.getHoldingRegisters(DeviceType.BATTERY));
 
         if (model.supportedFlows && model.supportedFlows.actions) {
             output += '\n### Supported flow actions\n';

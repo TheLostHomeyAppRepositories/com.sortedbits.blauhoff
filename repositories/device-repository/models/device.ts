@@ -1,12 +1,22 @@
 import { IAPI } from '../../../api/iapi';
 import { IBaseLogger } from '../../../helpers/log';
+import { BaseDevice } from '../../../models/base-device';
 import { defaultValueConverter } from '../helpers/default-value-converter';
+import { orderModbusRegisters } from '../helpers/order-modbus-registers';
+import { AccessMode } from './enum/access-mode';
 import { Brand } from './enum/brand';
 import { RegisterType } from './enum/register-type';
-import { ModbusRegister } from './modbus-register';
+import { DeviceType, ModbusRegister } from './modbus-register';
 import { SupportedFlowTypes, SupportedFlows } from './supported-flows';
 
 export type DataConverter = (log: IBaseLogger, buffer: Buffer, register: ModbusRegister) => any;
+
+interface StateCalculation {
+    capabilityId: string;
+    deviceTypes: DeviceType[];
+    calculation: (device: BaseDevice, state: { [id: string]: any }) => Promise<any>;
+    dependecies?: string[];
+}
 
 export class Device {
     private isRunningAction = false;
@@ -77,6 +87,10 @@ export class Device {
      */
     public inputRegisters: ModbusRegister[] = [];
 
+    public getInputRegisters = (deviceType: DeviceType): ModbusRegister[] => {
+        return orderModbusRegisters(this.inputRegisters.filter(r => r.deviceTypes.includes(deviceType)));
+    };
+
     /**
      * The holding registers of the device
      *
@@ -85,6 +99,21 @@ export class Device {
      */
     public holdingRegisters: ModbusRegister[] = [];
 
+    public getHoldingRegisters = (deviceType: DeviceType): ModbusRegister[] => {
+        return orderModbusRegisters(this.holdingRegisters.filter(r => r.deviceTypes.includes(deviceType)));
+    };
+
+    public getAllCapabilities = (deviceType: DeviceType): string[] => {
+        const inputRegisters = this.getInputRegisters(deviceType).filter(r => r.accessMode !== AccessMode.WriteOnly).flatMap(r => r.parseConfigurations.map(p => p.capabilityId));
+        const holdingRegisters = this.getHoldingRegisters(deviceType).filter(r => r.accessMode !== AccessMode.WriteOnly).flatMap(r => r.parseConfigurations.map(p => p.capabilityId));
+        const stateCapabilities = this.stateCalculations.filter(s => s.deviceTypes.includes(deviceType)).map(s => s.capabilityId);
+
+        const result = inputRegisters.concat(holdingRegisters).concat(stateCapabilities)
+        result.push('readable_boolean.device_status')
+        result.push('date.record');
+        return result;
+    }
+
     /**
      * The supported flows of the device
      *
@@ -92,6 +121,12 @@ export class Device {
      * @memberof Device
      */
     public supportedFlows: SupportedFlows = {};
+
+    public stateCalculations: StateCalculation[] = [];
+
+    public getStateCalculations = (deviceType: DeviceType): StateCalculation[] => {
+        return this.stateCalculations.filter(s => s.deviceTypes.includes(deviceType));
+    }
 
     constructor(id: string, brand: Brand, name: string, description: string, hasBattery: boolean) {
         this.id = id;

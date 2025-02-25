@@ -1,10 +1,15 @@
 ## BlauHoff Sun *K SG04LP3 EU
 BlauHoff Deye Sun *K SG04LP3 EU Series
 
-
-### Holding Registers
+### Input Registers Inverter
 | Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
-| ------- | ------ | --------- | ---- |----- | -------------- | ------------- | --------------- | ----- | ----------- |
+| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
+### Input Registers Battery
+| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
+| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
+### Holding Registers Inverter
+| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
+| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
 | 1| 1| UINT16| | -| No| status_code.modbus_address| Modbus address| -| Inverter |
 | 2| 1| UINT16| | -| No| status_code.modbus_protocol| Modbus version| -| Inverter |
 | 3| 5| STRING| | -| No| serial| Serial number| -| Inverter |
@@ -77,6 +82,9 @@ BlauHoff Deye Sun *K SG04LP3 EU Series
 | 653| 1| INT16| W| -| No| measure_power.load| Load power| -| Inverter |
 | 672| 1| UINT16| W| -| No| measure_power.pv1| PV 1 power| -| Inverter |
 | 673| 1| UINT16| W| -| No| measure_power.pv2| PV 2 power| -| Inverter |
+### Holding Registers Battery
+| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
+| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
 
 ### Supported flow actions
 

@@ -11,6 +11,7 @@ import { IBaseLogger } from '../../../../../helpers/log';
 import { Device } from '../../../models/device';
 import { Brand } from '../../../models/enum/brand';
 import { RegisterType } from '../../../models/enum/register-type';
+import { DeviceType } from '../../../models/modbus-register';
 import { holdingRegisters } from './holding-registers';
 
 export class DeyeSunXKSG01HP3 extends Device {
@@ -38,6 +39,20 @@ export class DeyeSunXKSG01HP3 extends Device {
         };
 
         this.addHoldingRegisters(holdingRegisters);
+
+        this.stateCalculations = [
+            {
+                capabilityId: 'measure_power',
+                deviceTypes: [DeviceType.SOLAR],
+                dependecies: ['measure_power.pv1', 'measure_power.pv2'],
+                calculation: async (device, state): Promise<any> => {
+                    const pv1 = device.getCapabilityValue('measure_power.pv1');
+                    const pv2 = device.getCapabilityValue('measure_power.pv2');
+
+                    return Number(pv1) + Number(pv2);
+                }
+            }
+        ];
     }
 
     setMaxSolarPower = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {

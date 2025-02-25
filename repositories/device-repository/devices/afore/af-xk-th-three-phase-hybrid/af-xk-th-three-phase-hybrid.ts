@@ -11,6 +11,7 @@ import { Device } from '../../../models/device';
 import { Brand } from '../../../models/enum/brand';
 import { bufferForDataType } from '../../../models/enum/register-datatype';
 import { RegisterType } from '../../../models/enum/register-type';
+import { DeviceType } from '../../../models/modbus-register';
 import { holdingRegisters } from './holding-registers';
 import { inputRegisters } from './input-registers';
 
@@ -31,6 +32,8 @@ export class AforeAFXKTH extends Device {
                 set_timing_ac_charge_on: this.setTimingAcChargeOn,
             },
         };
+
+        this.stateCalculations = [];
 
         this.addInputRegisters(inputRegisters);
         this.addHoldingRegisters(holdingRegisters);

@@ -144,8 +144,7 @@ export const holdingRegisters: ModbusRegister[] = [
     ModbusRegister.scale('measure_voltage.grid_l3', 600, 1, RegisterDataType.UINT16, 0.1),
 
     // inverter
-    ModbusRegister.default('measure_power.inverter', 636, 1, RegisterDataType.INT16, undefined, undefined, [DeviceType.SOLAR])
-        .addDefault('measure_power'),
+    ModbusRegister.default('measure_power.inverter', 636, 1, RegisterDataType.INT16, undefined, undefined, [DeviceType.SOLAR]),
 
     ModbusRegister.scale('measure_temperature.ac', 541, 1, RegisterDataType.UINT16, 0.01),
 

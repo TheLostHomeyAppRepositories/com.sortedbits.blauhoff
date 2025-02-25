@@ -1,7 +1,7 @@
 ## BlauHoff AF XK-TH
 BlauHoff Afore AF XK-TH Three Phase Hybrid Inverter Series
 
-### Input Registers
+### Input Registers Inverter
 | Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
 | ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
 | 0| 6| STRING| | -| No| status_text.inverter_name| Inverter name| -| Battery, Inverter |
@@ -11,8 +11,14 @@ BlauHoff Afore AF XK-TH Three Phase Hybrid Inverter Series
 | 553| 2| UINT32| W| -| No| measure_power| Power| 0 - 24100| Inverter |
 | 555| 1| UINT16| V| 0.1| No| measure_voltage.pv1| PV 1 voltage| 0 - 800| Inverter |
 | 557| 1| UINT16| W| -| No| measure_power.pv1| PV 1 power| 0 - 15000| Inverter |
-| 558| 1| UINT16| V| 0.1| No| measure_voltage.pv2| undefined| 0 - 800| Inverter |
+| 558| 1| UINT16| V| 0.1| No| measure_voltage.pv2| PV 2 voltage| 0 - 800| Inverter |
 | 560| 1| UINT16| W| -| No| measure_power.pv2| PV 2 power| 0 - 15000| Inverter |
+| 2500| 1| UINT16| | -| No| status_code.running_state| undefined| -| Inverter |
+### Input Registers Battery
+| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
+| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
+| 0| 6| STRING| | -| No| status_text.inverter_name| Inverter name| -| Battery, Inverter |
+| 11| 4| STRING| | -| No| status_text.hard_name| Hard name| -| Battery, Inverter |
 | 2000| 1| UINT16| | -| Yes| status_text.battery_state| Battery state| -| Battery |
 | 2001| 1| INT16| °C| 0.1| No| measure_temperature.battery1| Battery 1 temperature| -40 - 100| Battery |
 | 2002| 1| UINT16| %| -| No| measure_percentage.bat_soc| Battery SOC| 0 - 100| Battery |
@@ -23,11 +29,12 @@ BlauHoff Afore AF XK-TH Three Phase Hybrid Inverter Series
 | 2010| 1| UINT16| kWh| 0.1| No| meter_power.daily_battery_discharge| Daily battery discharge| 0 - 250| Battery |
 | 2011| 2| UINT32| kWh| 0.1| No| meter_power.total_battery_charge| Total battery charge| -| Battery |
 | 2013| 2| UINT32| kWh| 0.1| No| meter_power.total_battery_discharge| Total battery discharge| -| Battery |
-| 2500| 1| UINT16| | -| No| status_code.running_state| undefined| -| Inverter |
-
-### Holding Registers
+### Holding Registers Inverter
 | Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
-| ------- | ------ | --------- | ---- |----- | -------------- | ------------- | --------------- | ----- | ----------- |
+| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
+### Holding Registers Battery
+| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
+| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
 | 206| 2| UINT32| | -| Yes| status_text.ac_timing_charge| AC timing charge| -| Battery |
 | 206| 2| UINT32| | -| Yes| status_text.timing_charge| Timing charge| -| Battery |
 | 206| 2| UINT32| | -| Yes| status_text.timing_discharge| Timing discharge| -| Battery |

@@ -37,6 +37,8 @@ export class BaseDevice extends Homey.Device {
     private batteryDevice?: BaseDevice;
     private inverterDevice?: BaseDevice;
 
+    private lastState: { [id: string]: boolean } = {};
+
     public logDeviceName = () => {
         return this.getName();
     };
@@ -122,6 +124,8 @@ export class BaseDevice extends Homey.Device {
 
             await capabilityChange(this, parseConfiguration.capabilityId, result);
 
+            this.lastState[parseConfiguration.capabilityId] = result;
+
             parseConfiguration.currentValue = result;
 
             if (!this.reachable) {
@@ -133,6 +137,15 @@ export class BaseDevice extends Homey.Device {
             const localDate = date.setZone(localTimezone);
 
             await capabilityChange(this, 'date.record', localDate.toFormat('HH:mm:ss'));
+
+            const dependendantStateCalculations = this.device.getStateCalculations(deviceType).filter(s => (s.dependecies && s.dependecies.indexOf(parseConfiguration.capabilityId) > -1) || s.dependecies === undefined);
+
+            if (dependendantStateCalculations.length > 0) {
+                for (const calc of dependendantStateCalculations) {
+                    const result = await calc.calculation(this, this.lastState);
+                    await capabilityChange(this, calc.capabilityId, result);
+                }
+            }
 
         }
         if (!battery && this.batteryDevice) {
@@ -164,29 +177,21 @@ export class BaseDevice extends Homey.Device {
      * @param definition The Modbus device definition.
      */
     private initializeCapabilities = async (isBattery: boolean) => {
-        const inputRegisters = this.device.inputRegisters;
-        const holdingRegisters = this.device.holdingRegisters;
-
         const deviceType = isBattery ? DeviceType.BATTERY : DeviceType.SOLAR;
 
-        const allRegisters = orderModbusRegisters(inputRegisters.concat(holdingRegisters));
+        const capabilities = this.device.getAllCapabilities(deviceType);
+        this.log(`Capabilities: `, capabilities);
 
-        for (const register of allRegisters) {
-            if (register.deviceTypes.includes(deviceType) && register.accessMode !== AccessMode.WriteOnly) {
-                for (const configuration of register.parseConfigurations) {
-                    this.log(`Adding! [${deviceType}] [${register.deviceTypes}] ${configuration.capabilityId}`);
-                    await addCapabilityIfNotExists(this, configuration.capabilityId);
-                }
-            }
+        for (const capability of capabilities) {
+            await addCapabilityIfNotExists(this, capability);
         }
 
-        const capabilities = this.getCapabilities()
-        for (const capability of capabilities) {
-            if (capability !== 'readable_boolean.device_status' && capability !== 'date.record') {
-                const exists = allRegisters.find(r => r.parseConfigurations.find(p => p.capabilityId == capability) && r.deviceTypes.includes(deviceType));
-                if (!exists) {
-                    await deprecateCapability(this, capability);
-                }
+        const currentCapabilities = this.getCapabilities()
+
+        for (const capability of currentCapabilities) {
+            const exists = capabilities.find(r => r == capability);
+            if (!exists) {
+                await deprecateCapability(this, capability);
             }
         }
     };
@@ -396,7 +401,9 @@ export class BaseDevice extends Homey.Device {
         newSettings,
         changedKeys,
     }: {
-        oldSettings: { [key: string]: boolean | string | number | undefined | null };
+        oldSettings: {
+            [key: string]: boolean | string | number | undefined | null
+        };
         newSettings: { [key: string]: boolean | string | number | undefined | null };
         changedKeys: string[];
     }): Promise<string | void> {
