@@ -24,6 +24,7 @@ export class BaseDevice extends Homey.Device {
     private api?: IAPI;
     private reachable: boolean = false;
     private readRegisterTimeout: NodeJS.Timeout | undefined;
+    private connectTimeout: NodeJS.Timeout | undefined;
     private device!: Device;
     private enabled: boolean = true;
 
@@ -237,7 +238,7 @@ export class BaseDevice extends Homey.Device {
         await super.onInit();
 
         const { modelId, battery, batteryId } = this.getData();
-        const { removedBattery } = this.getSettings();
+        const { removedBattery, removedInverter } = this.getSettings();
 
         const result = DeviceRepository.getInstance().getDeviceById(modelId);
 
@@ -253,7 +254,13 @@ export class BaseDevice extends Homey.Device {
             this.setClass('battery')
             this.setEnergy({
                 'homeBattery': true
-            })
+            });
+
+            if (removedInverter) {
+                this.setUnavailable('Inverter should not have been deleted, delete this device as well and pair your inverter and battery again.');
+                return;
+            }
+
         } else {
             this.setClass('solarpanel')
         }
@@ -315,7 +322,7 @@ export class BaseDevice extends Homey.Device {
         if (!this.batteryDevice) {
             this.log(`${this.device.name} Could not find battery device, retrying`);
 
-            this.homey.setTimeout(() => {
+            this.connectTimeout = this.homey.setTimeout(() => {
                 this.tryConnectBattery();
             }, 1000);
         }
@@ -334,7 +341,7 @@ export class BaseDevice extends Homey.Device {
         if (!this.inverterDevice) {
             this.log('Could not find inverter device, retrying');
 
-            this.homey.setTimeout(() => {
+            this.connectTimeout = this.homey.setTimeout(() => {
                 this.tryConnectInverter();
             }, 1000);
         }
@@ -467,6 +474,10 @@ export class BaseDevice extends Homey.Device {
             await (this.driver as BaseDriver).deleteBattery(batteryId);
         } else if (battery) {
             await (this.driver as BaseDriver).removeBattery(id);
+        }
+
+        if (this.connectTimeout) {
+            this.homey.clearTimeout(this.connectTimeout);
         }
     }
 

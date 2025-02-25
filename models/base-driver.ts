@@ -220,7 +220,12 @@ export class BaseDriver extends Homey.Driver {
 
         if (devices?.length) {
             const d = devices[0];
-            d.setUnavailable('Inverter can not be deleted');
+
+            d.setSettings({
+                removedInverter: true
+            });
+
+            d.setUnavailable('Inverter should not have been deleted, delete this device as well and pair your inverter and battery again.');
         }
     }
 
