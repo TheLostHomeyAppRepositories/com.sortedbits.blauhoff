@@ -37,6 +37,8 @@ export const inputRegisters: ModbusRegister[] = [
         validValueMax: 15000,
     }),
 
+    ModbusRegister.scale('meter_power', 1026, 2, RegisterDataType.UINT32, 0.1, AccessMode.ReadOnly, undefined, [DeviceType.SOLAR]),
+
     ModbusRegister.transform('status_text.battery_state', 2000, 1, RegisterDataType.UINT16, (value) => {
         switch (value) {
             case 0:
