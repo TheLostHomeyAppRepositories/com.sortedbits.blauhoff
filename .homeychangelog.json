@@ -205,5 +205,8 @@
   },
   "3.0.1": {
     "en": "Allow calculations in capabilities"
+  },
+  "3.0.2": {
+    "en": "Measure meter power for solar part of inverter"
   }
 }
