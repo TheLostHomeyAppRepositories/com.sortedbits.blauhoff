@@ -34,8 +34,8 @@ export class BaseDevice extends Homey.Device {
 
     private isInInvalidState: { [id: string]: boolean } = {};
 
-    private batteryDevice?: BaseDevice;
-    private inverterDevice?: BaseDevice;
+    batteryDevice?: BaseDevice;
+    inverterDevice?: BaseDevice;
 
     private lastState: { [id: string]: boolean } = {};
 
@@ -149,7 +149,11 @@ export class BaseDevice extends Homey.Device {
 
         }
         if (!battery && this.batteryDevice) {
-            (this.batteryDevice as BaseDevice).onDataReceived(value, buffer, parseConfiguration);
+            try {
+                (this.batteryDevice as BaseDevice).onDataReceived(value, buffer, parseConfiguration);
+            } catch (err) {
+                this.error(`Failed to update battery`);
+            }
         }
 
         await this.updateDeviceAvailability(true);
@@ -180,7 +184,6 @@ export class BaseDevice extends Homey.Device {
         const deviceType = isBattery ? DeviceType.BATTERY : DeviceType.SOLAR;
 
         const capabilities = this.device.getAllCapabilities(deviceType);
-        this.log(`Capabilities: `, capabilities);
 
         for (const capability of capabilities) {
             await addCapabilityIfNotExists(this, capability);
@@ -234,6 +237,17 @@ export class BaseDevice extends Homey.Device {
         await super.onInit();
 
         const { modelId, battery, batteryId } = this.getData();
+        const { removedBattery } = this.getSettings();
+
+        const result = DeviceRepository.getInstance().getDeviceById(modelId);
+
+        if (!result) {
+            this.filteredError('Unknown device type', modelId);
+            throw new Error('Unknown device type');
+        }
+        this.device = result;
+
+        this.log(`Removed battery: ${result.name} ${removedBattery}`)
 
         if (battery) {
             this.setClass('battery')
@@ -244,26 +258,14 @@ export class BaseDevice extends Homey.Device {
             this.setClass('solarpanel')
         }
 
-        const result = DeviceRepository.getInstance().getDeviceById(modelId);
-
-        if (!result) {
-            this.filteredError('Unknown device type', modelId);
-            throw new Error('Unknown device type');
-        }
-
-        if (!battery) {
-            if (batteryId) {
+        if (battery) {
+            this.tryConnectInverter();
+        } else {
+            if (this.device.hasBattery && batteryId && !removedBattery) {
                 this.tryConnectBattery();
-            } else if (!batteryId) {
-                this.log('No batteryId defined')
             }
         }
 
-        if (battery) {
-            this.tryConnectInverter();
-        }
-
-        this.device = result;
         this.filteredLog('ModbusDevice has been initialized');
 
         await deprecateCapability(this, 'status_code.device_online');
@@ -296,11 +298,12 @@ export class BaseDevice extends Homey.Device {
     }
 
     private tryConnectBattery = () => {
-        const { battery } = this.getData();
+        const { batteryId, battery } = this.getData();
         const { removedBattery } = this.getSettings();
 
         if (removedBattery) {
             this.log('Battery has been removed from this inverter');
+            return;
         }
 
         if (battery) {
@@ -310,7 +313,7 @@ export class BaseDevice extends Homey.Device {
         this.batteryDevice = this.getBattery();
 
         if (!this.batteryDevice) {
-            this.log('Could not find battery device, retrying');
+            this.log(`${this.device.name} Could not find battery device, retrying`);
 
             this.homey.setTimeout(() => {
                 this.tryConnectBattery();
@@ -450,11 +453,15 @@ export class BaseDevice extends Homey.Device {
             this.filteredLog('ModbusDevice has been deleted');
 
             if (this.readRegisterTimeout) {
-                clearTimeout(this.readRegisterTimeout);
+                this.homey.clearTimeout(this.readRegisterTimeout);
             }
 
             if (this.api?.isConnected()) {
                 await this.api?.disconnect();
+            }
+
+            if (this.batteryDevice) {
+                this.batteryDevice.inverterDevice = undefined;
             }
 
             await (this.driver as BaseDriver).deleteBattery(batteryId);

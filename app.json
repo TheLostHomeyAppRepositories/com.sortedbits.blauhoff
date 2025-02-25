@@ -1010,12 +1010,6 @@
           "id": "device_model"
         },
         {
-          "id": "connection_type"
-        },
-        {
-          "id": "solarman_information"
-        },
-        {
           "id": "modbus_information"
         },
         {
