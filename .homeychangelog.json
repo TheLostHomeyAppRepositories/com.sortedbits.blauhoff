@@ -202,5 +202,8 @@
   },
   "3.0.0": {
     "en": "Separate inverter and battery"
+  },
+  "3.0.1": {
+    "en": "Allow calculations in capabilities"
   }
 }
