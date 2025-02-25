@@ -1,12 +1,6 @@
 ## BlauHoff Sun *K SG01HP3 EU AM2
 BlauHoff Deye Sun *K SG01HP3 EU AM2 Series
 
-### Input Registers Inverter
-| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
-| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
-### Input Registers Battery
-| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
-| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
 ### Holding Registers Inverter
 | Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
 | ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |

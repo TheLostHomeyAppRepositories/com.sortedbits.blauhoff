@@ -123,8 +123,11 @@ const optionsToRange = (options: ModbusRegisterOptions) => {
 };
 
 const printRegisters = (title: string, registers: ModbusRegister[]): string => {
-    var output = '';
+    if (registers.length === 0) {
+        return '';
+    }
 
+    var output = '';
     output += `### ${title}\n`;
     output += '| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |\n';
     output += '| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |\n';

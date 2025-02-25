@@ -14,14 +14,8 @@ Single phase Growatt string inverter.
 | 38| 2| UINT16| V| 0.1| No| measure_voltage.grid_l1| Grid L1 voltage| 0 - 300| Inverter |
 | 53| 2| UINT32| kWh| 0.1| No| meter_power.today| Today| 0 - 100| Inverter |
 | 55| 2| UINT32| kWh| 0.1| No| meter_power| Energy| >= 0.1| Inverter |
-### Input Registers Battery
-| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
-| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
 ### Holding Registers Inverter
 | Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
 | ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
 | 23| 5| STRING| | -| No| serial| Serial number| -| Inverter |
-### Holding Registers Battery
-| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
-| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
 

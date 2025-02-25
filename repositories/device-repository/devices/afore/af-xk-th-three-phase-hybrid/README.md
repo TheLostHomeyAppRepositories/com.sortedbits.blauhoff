@@ -29,9 +29,6 @@ BlauHoff Afore AF XK-TH Three Phase Hybrid Inverter Series
 | 2010| 1| UINT16| kWh| 0.1| No| meter_power.daily_battery_discharge| Daily battery discharge| 0 - 250| Battery |
 | 2011| 2| UINT32| kWh| 0.1| No| meter_power.total_battery_charge| Total battery charge| -| Battery |
 | 2013| 2| UINT32| kWh| 0.1| No| meter_power.total_battery_discharge| Total battery discharge| -| Battery |
-### Holding Registers Inverter
-| Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
-| ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
 ### Holding Registers Battery
 | Address | Length | Data Type | Unit | Scale | Tranformation | Capability ID | Capability name | Range | DeviceTypes |
 | ------- | ------ | --------- | ---- | ----- | ------------- | ------------- | --------------- | ----- | ----------- |
