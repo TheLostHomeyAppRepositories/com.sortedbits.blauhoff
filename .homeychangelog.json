@@ -217,5 +217,8 @@
   },
   "3.1.1": {
     "en": "Better handling when inverter is deleted."
+  },
+  "3.1.2": {
+    "en": "Upgrade all Deye inverters to new type"
   }
 }
