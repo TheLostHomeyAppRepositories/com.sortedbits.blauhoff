@@ -208,5 +208,8 @@
   },
   "3.0.2": {
     "en": "Measure meter power for solar part of inverter"
+  },
+  "3.0.3": {
+    "en": "Fix meter_power, maybe"
   }
 }
