@@ -214,5 +214,8 @@
   },
   "3.1.0": {
     "en": "This is a breaking update and you need to remove your old Blauhoff device."
+  },
+  "3.1.1": {
+    "en": "Better handling when inverter is deleted."
   }
 }
