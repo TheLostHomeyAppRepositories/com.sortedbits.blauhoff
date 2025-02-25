@@ -127,8 +127,11 @@ export const holdingRegisters: ModbusRegister[] = [
     ModbusRegister.scale('meter_power.total_to_load', 527, 1, RegisterDataType.UINT16, 0.1), // total consumption
     ModbusRegister.scale('meter_power.daily_pv', 529, 1, RegisterDataType.UINT16, 0.1), // day pv power
 
-    ModbusRegister.scale('meter_power.total_pv', 534, 2, RegisterDataType.UINT16, 0.1, AccessMode.ReadOnly, undefined, [DeviceType.SOLAR])
-        .addScale('meter_power', 0.1), // total PV power
+    ModbusRegister.scale('meter_power.total_pv', 534, 1, RegisterDataType.UINT16, 0.1, AccessMode.ReadOnly, undefined, [DeviceType.SOLAR])
+        .addScale('meter_power', 0.1),
+
+    // ModbusRegister.scale('meter_power', 504, 1, RegisterDataType.UINT16, 0.1),
+    // ModbusRegister.scale('meter_power', 504, 1, RegisterDataType.UINT16, 0.1),
 
     ModbusRegister.scale('meter_power.daily_battery_charge', 514, 1, RegisterDataType.UINT16, 0.1, undefined, undefined, [DeviceType.BATTERY]), // day batt charge
     ModbusRegister.scale('meter_power.daily_battery_discharge', 515, 1, RegisterDataType.UINT16, 0.1, undefined, undefined, [DeviceType.BATTERY]), // day batt discharge
