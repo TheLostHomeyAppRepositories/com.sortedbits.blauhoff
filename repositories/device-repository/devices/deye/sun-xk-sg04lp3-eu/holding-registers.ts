@@ -2,7 +2,7 @@ import { readBitBE } from '../../../../../helpers/bits';
 import { valueToTime } from '../../../../../helpers/time';
 import { AccessMode } from '../../../models/enum/access-mode';
 import { RegisterDataType } from '../../../models/enum/register-datatype';
-import { ModbusRegister } from '../../../models/modbus-register';
+import { DeviceType, ModbusRegister } from '../../../models/modbus-register';
 
 export const holdingRegisters: ModbusRegister[] = [
     // settings
@@ -127,10 +127,10 @@ export const holdingRegisters: ModbusRegister[] = [
     ModbusRegister.scale('meter_power.total_to_load', 527, 1, RegisterDataType.UINT16, 0.1), // total consumption
     ModbusRegister.scale('meter_power.daily_pv', 529, 1, RegisterDataType.UINT16, 0.1), // day pv power
     ModbusRegister.scale('meter_power.total_pv', 534, 2, RegisterDataType.UINT16, 0.1), // total PV power
-    ModbusRegister.scale('meter_power.daily_battery_charge', 514, 1, RegisterDataType.UINT16, 0.1), // day batt charge
-    ModbusRegister.scale('meter_power.daily_battery_discharge', 515, 1, RegisterDataType.UINT16, 0.1), // day batt discharge
-    ModbusRegister.scale('meter_power.total_battery_charge', 516, 1, RegisterDataType.UINT16, 0.1), // total batt charge
-    ModbusRegister.scale('meter_power.total_battery_discharge', 518, 1, RegisterDataType.UINT16, 0.1), // total batt discharge
+    ModbusRegister.scale('meter_power.daily_battery_charge', 514, 1, RegisterDataType.UINT16, 0.1, undefined, undefined, [DeviceType.BATTERY]),
+    ModbusRegister.scale('meter_power.daily_battery_discharge', 515, 1, RegisterDataType.UINT16, 0.1, undefined, undefined, [DeviceType.BATTERY]),
+    ModbusRegister.scale('meter_power.total_battery_charge', 516, 1, RegisterDataType.UINT16, 0.1, undefined, undefined, [DeviceType.BATTERY]), // day batt charge
+    ModbusRegister.scale('meter_power.total_battery_discharge', 518, 1, RegisterDataType.UINT16, 0.1, undefined, undefined, [DeviceType.BATTERY]), // day batt charge
 
     // pv
     ModbusRegister.default('measure_power.pv1', 672, 1, RegisterDataType.UINT16),
@@ -148,23 +148,25 @@ export const holdingRegisters: ModbusRegister[] = [
     ModbusRegister.scale('measure_temperature.ac', 541, 1, RegisterDataType.UINT16, 0.01),
 
     // battery
-    ModbusRegister.default('measure_power.battery1', 590, 1, RegisterDataType.INT16).addTransform('measure_power', (value) => {
-        const numberValue = parseFloat(value);
+    ModbusRegister.default('measure_power.battery1', 590, 1, RegisterDataType.INT16, undefined, undefined, [DeviceType.BATTERY])
+        .addTransform('measure_power', (value) => {
+            const numberValue = parseFloat(value);
 
-        if (isNaN(numberValue)) {
-            return undefined;
-        }
+            if (isNaN(numberValue)) {
+                return undefined;
+            }
 
-        return numberValue * -1;
-    }),
+            return numberValue * -1;
+        }),
 
-    ModbusRegister.scale('measure_current.battery1', 591, 1, RegisterDataType.INT16, 0.01),
-    ModbusRegister.scale('measure_voltage.battery1', 587, 1, RegisterDataType.INT16, 0.1),
+    ModbusRegister.scale('measure_current.battery1', 591, 1, RegisterDataType.INT16, 0.01, undefined, undefined, [DeviceType.BATTERY]),
+    ModbusRegister.scale('measure_voltage.battery1', 587, 1, RegisterDataType.INT16, 0.1, undefined, undefined, [DeviceType.BATTERY]),
 
-    ModbusRegister.default('measure_percentage.battery1', 588, 1, RegisterDataType.UINT16), // SOC
+    ModbusRegister.default('measure_percentage.battery1', 588, 1, RegisterDataType.UINT16, undefined, undefined, [DeviceType.BATTERY])
+        .addDefault('measure_battery'), // SOC
 
-    ModbusRegister.scale('measure_temperature.battery1', 586, 1, RegisterDataType.UINT16, 0.01),
-    ModbusRegister.scale('measure_temperature.dc', 540, 1, RegisterDataType.UINT16, 0.01),
+    ModbusRegister.scale('measure_temperature.battery1', 586, 1, RegisterDataType.UINT16, 0.01, undefined, undefined, [DeviceType.BATTERY]),
+    ModbusRegister.scale('measure_temperature.dc', 540, 1, RegisterDataType.UINT16, 0.01, undefined, undefined, [DeviceType.BATTERY]),
 
     // load
     ModbusRegister.default('measure_power.load', 653, 1, RegisterDataType.INT16),

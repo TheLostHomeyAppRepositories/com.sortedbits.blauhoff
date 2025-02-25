@@ -238,7 +238,12 @@ export class BaseDevice extends Homey.Device {
         await super.onInit();
 
         const { modelId, battery, batteryId } = this.getData();
-        const { removedBattery, removedInverter } = this.getSettings();
+        const { removedBattery, removedInverter, version } = this.getSettings();
+
+        if (version === undefined || version < 3) {
+            this.setUnavailable('For this new version to work, you need to remove and repair your devices');
+            return;
+        }
 
         const result = DeviceRepository.getInstance().getDeviceById(modelId);
 

@@ -88,6 +88,7 @@ export class BaseDriver extends Homey.Driver {
                 modelId: this.pairingDeviceModelId,
                 battery: battery,
                 batteryId: !battery && device?.hasBattery ? this.deviceInformationToId(deviceInformation, true) : undefined,
+                version: 3,
             },
             settings: {
                 host: deviceInformation.host,

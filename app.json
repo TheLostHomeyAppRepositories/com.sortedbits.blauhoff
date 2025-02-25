@@ -1619,25 +1619,17 @@
           }
         },
         {
-          "id": "solarman",
-          "type": "checkbox",
+          "id": "version",
+          "type": "number",
           "label": {
-            "en": "Use solarman"
+            "en": "Device version",
+            "nl": "Apparaat versie"
           },
-          "value": false,
+          "min": 0,
+          "value": 0,
+          "max": 100,
           "hint": {
-            "en": "When this is enabled, Homey is directly connected to your Solarman network device."
-          }
-        },
-        {
-          "id": "serial",
-          "type": "text",
-          "label": {
-            "en": "Solarman serial"
-          },
-          "value": "",
-          "hint": {
-            "en": "The serial number of your Solarman network device."
+            "en": "Device version"
           }
         },
         {
