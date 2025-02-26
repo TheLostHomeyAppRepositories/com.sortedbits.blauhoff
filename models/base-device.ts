@@ -240,8 +240,14 @@ export class BaseDevice extends Homey.Device {
         const { modelId, battery, batteryId } = this.getData();
         const { removedBattery, removedInverter, version } = this.getSettings();
 
+
         if (version === undefined || version < 3) {
             this.setUnavailable('For this new version to work, you need to remove and repair your devices');
+
+            this.homey.notifications.createNotification({
+                excerpt: "Your Blauhoff devices have been added using a deprecated driver, please remove and repair your devices"
+            })
+
             return;
         }
 
