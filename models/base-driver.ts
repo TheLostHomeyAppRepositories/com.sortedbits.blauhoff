@@ -208,10 +208,6 @@ export class BaseDriver extends Homey.Driver {
         return result;
     };
 
-    onDeviceDataReceived = async (value: any, buffer: Buffer, parseConfiguration: ModbusRegisterParseConfiguration) => {
-
-    }
-
     deleteBattery = async (batteryId: string) => {
         const devices = this.getDevices().filter(d => {
             const { id, battery } = d.getData();

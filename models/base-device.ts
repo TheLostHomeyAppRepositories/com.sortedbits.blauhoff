@@ -240,7 +240,6 @@ export class BaseDevice extends Homey.Device {
         const { modelId, battery, batteryId } = this.getData();
         const { removedBattery, removedInverter, version } = this.getSettings();
 
-
         if (version === undefined || version < 3) {
             this.setUnavailable('For this new version to work, you need to remove and repair your devices');
 
@@ -274,6 +273,9 @@ export class BaseDevice extends Homey.Device {
 
         } else {
             this.setClass('solarpanel')
+            this.setEnergy({
+                'homeBattery': false,
+            });
         }
 
         if (battery) {
