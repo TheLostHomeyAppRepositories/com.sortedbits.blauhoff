@@ -226,5 +226,8 @@
   },
   "3.1.4": {
     "en": "Don't set homeBattery on inverter."
+  },
+  "3.2.0": {
+    "en": "Connection is no longer maintained to the inverter to play nice with more apps"
   }
 }
