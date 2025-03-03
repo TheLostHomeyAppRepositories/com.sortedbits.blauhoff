@@ -5,16 +5,16 @@
  * Non-commercial use only
  */
 
-import { IAPI } from '../../../../../api/iapi';
+import { IAPI, IAPI2 } from '../../../../../api/iapi';
 import { logBits, writeBitsToBuffer } from '../../../../../helpers/bits';
 import { IBaseLogger } from '../../../../../helpers/log';
-import { Device } from '../../../models/device';
+import { ModbusDevice } from '../../../models/modbus-device';
 import { Brand } from '../../../models/enum/brand';
 import { RegisterType } from '../../../models/enum/register-type';
 import { DeviceType } from '../../../models/modbus-register';
 import { holdingRegisters } from './holding-registers';
 
-export class DeyeSunXKSG01HP3 extends Device {
+export class DeyeSunXKSG01HP3 extends ModbusDevice {
     constructor() {
         super('sun-xk-sg01hp3-eu-am2', Brand.Deye, 'BlauHoff Sun *K SG01HP3 EU AM2', 'BlauHoff Deye Sun *K SG01HP3 EU AM2 Series', true);
 
@@ -55,7 +55,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         ];
     }
 
-    setMaxSolarPower = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setMaxSolarPower = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const register = this.getRegisterByTypeAndAddress(RegisterType.Holding, 340);
 
         if (register === undefined) {
@@ -81,7 +81,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    setMaxSellPower = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setMaxSellPower = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const register = this.getRegisterByTypeAndAddress(RegisterType.Holding, 143);
 
         if (register === undefined) {
@@ -107,7 +107,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    setSolarSell = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setSolarSell = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const register = this.getRegisterByTypeAndAddress(RegisterType.Holding, 145);
         if (register === undefined) {
             origin.filteredError('Register not found');
@@ -126,11 +126,11 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    writeValueToRegister = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    writeValueToRegister = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         client.writeValueToRegister(args);
     };
 
-    setEnergyPattern = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setEnergyPattern = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const register = this.getRegisterByTypeAndAddress(RegisterType.Holding, 141);
 
         if (register === undefined) {
@@ -170,7 +170,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    setWorkmodeAndZeroExportPower = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setWorkmodeAndZeroExportPower = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const workmodes = [
             { id: 'selling_first', value: 0 },
             {
@@ -221,7 +221,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    setGridPeakShavingOn = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setGridPeakShavingOn = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const modeRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 178);
         const powerRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 191);
 
@@ -255,7 +255,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    setGridPeakShavingOff = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setGridPeakShavingOff = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const modeRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 178);
 
         if (!modeRegister) {
@@ -276,7 +276,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    setTimeOfUseEnabled = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setTimeOfUseEnabled = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const register = this.getRegisterByTypeAndAddress(RegisterType.Holding, 146);
 
         if (register === undefined) {
@@ -296,7 +296,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    setTimeOfUseDayEnabled = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setTimeOfUseDayEnabled = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const register = this.getRegisterByTypeAndAddress(RegisterType.Holding, 146);
 
         if (register === undefined) {
@@ -321,7 +321,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    setTimeOfUseTimeslotParametersStart = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setTimeOfUseTimeslotParametersStart = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const randomTimeout = Math.floor(Math.random() * 600);
 
         return new Promise((resolve) => {
@@ -329,7 +329,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         });
     };
 
-    setAllTimeslotParameters = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setAllTimeslotParameters = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const { gridcharge, generatorcharge, powerlimit, batterycharge } = args;
 
         const powerLimitNumber = Number(powerlimit);
@@ -376,7 +376,7 @@ export class DeyeSunXKSG01HP3 extends Device {
         }
     };
 
-    setTimeOfUseTimeslotParameters = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setTimeOfUseTimeslotParameters = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const { timeslot, time, gridcharge, generatorcharge, powerlimit, batterycharge } = args;
 
         const timeslotNumber = Number(timeslot);

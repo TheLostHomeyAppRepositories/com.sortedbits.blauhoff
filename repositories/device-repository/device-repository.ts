@@ -10,7 +10,7 @@ import { DeyeSunXKSG01HP3 } from './devices/deye/sun-xk-sg01hp3-eu-am2/sun-xk-sg
 import { DeyeSunXKSG04LP3 } from './devices/deye/sun-xk-sg04lp3-eu/sun-xk-sg04lp3-eu';
 import { GrowattTLX } from './devices/growatt/growatt-tl/mic-XXXX-tl';
 import { GrowattTL3X } from './devices/growatt/growatt-tl3/mod-XXXX-tl3';
-import { Device } from './models/device';
+import { ModbusDevice } from './models/modbus-device';
 import { Brand } from './models/enum/brand';
 import { RegisterType } from './models/enum/register-type';
 import { ModbusRegister } from './models/modbus-register';
@@ -26,7 +26,7 @@ export class DeviceRepository {
         return this.instance;
     }
 
-    public devices: Device[] = [];
+    public devices: ModbusDevice[] = [];
 
     constructor() {
         this.devices.push(new AforeAFXKTH());
@@ -38,15 +38,15 @@ export class DeviceRepository {
         /* When adding a new device, make sure to add it to the devices array */
     }
 
-    public getDeviceById(id: string): Device | undefined {
+    public getDeviceById(id: string): ModbusDevice | undefined {
         return this.devices.find((device) => device.id === id);
     }
 
-    public getDevicesByBrand(brand: Brand): Device[] {
+    public getDevicesByBrand(brand: Brand): ModbusDevice[] {
         return this.devices.filter((device) => device.brand === brand);
     }
 
-    public getRegisteryTypeAndAddress(device: Device, type: RegisterType, address: number): ModbusRegister | undefined {
+    public getRegisteryTypeAndAddress(device: ModbusDevice, type: RegisterType, address: number): ModbusRegister | undefined {
         return device.getRegisterByTypeAndAddress(type, address);
     }
 

@@ -73,7 +73,7 @@ const perform = async (): Promise<void> => {
         charge_command: 'charge',
     };
 
-    await device.callAction(log, 'set_charge_command', parameters, api);
+    // await device.callAction(log, 'set_charge_command', parameters, api);
     /*
 
     log.filteredLog('Reading current value', addressInfo.address);

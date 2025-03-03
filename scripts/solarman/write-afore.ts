@@ -5,6 +5,7 @@
  * Non-commercial use only
  */
 
+import { ModbusAPI2 } from '../../api/modbus/modbus-api2';
 import { Solarman } from '../../api/solarman/solarman';
 import { Logger } from '../../helpers/log';
 import { DeviceRepository } from '../../repositories/device-repository/device-repository';
@@ -21,10 +22,10 @@ if (!process.env.HOST || !process.env.PORT || !process.env.SERIAL || !process.en
 }
 
 const host = process.env.HOST;
-const port = process.env.PORT;
+const port = Number(process.env.PORT);
 const serial = process.env.SERIAL;
 const deviceId = process.env.DEVICE_ID;
-const unitId = process.env.UNIT_ID;
+const unitId = Number(process.env.UNIT_ID);
 
 const valueSolarmanResolved = async (value: any, buffer: Buffer, parseConfiguration: ModbusRegisterParseConfiguration) => {
     const result = parseConfiguration.calculateValue(value, buffer, log);
@@ -38,11 +39,11 @@ if (!device) {
     process.exit(1);
 }
 
-const solarmanApi = new Solarman(log, device, host, serial, Number(port), Number(unitId));
-solarmanApi.setOnDataReceived(valueSolarmanResolved);
+const solarmanApi = new ModbusAPI2(deviceId, {
+    host, port, unitId
+}, log);
 
 const perform = async (): Promise<void> => {
-    await solarmanApi.connect();
     //    await solarmanApi.readRegistersInBatch();
 
     /* SELF USE */
@@ -72,6 +73,3 @@ perform()
         log.log('Registers read');
     })
     .catch(log.error)
-    .finally(() => {
-        solarmanApi.disconnect();
-    });

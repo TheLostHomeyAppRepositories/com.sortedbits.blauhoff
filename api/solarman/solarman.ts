@@ -2,7 +2,7 @@ import { writeBitsToBufferBE } from '../../helpers/bits';
 import { IBaseLogger } from '../../helpers/log';
 import { validateValue } from '../../helpers/validate-value';
 import { createRegisterBatches } from '../../repositories/device-repository/helpers/register-batches';
-import { Device } from '../../repositories/device-repository/models/device';
+import { ModbusDevice } from '../../repositories/device-repository/models/modbus-device';
 import { bufferForDataType, lengthForDataType } from '../../repositories/device-repository/models/enum/register-datatype';
 import { RegisterType } from '../../repositories/device-repository/models/enum/register-type';
 import { ModbusRegister, ModbusRegisterParseConfiguration } from '../../repositories/device-repository/models/modbus-register';
@@ -26,7 +26,7 @@ export class Solarman implements IAPI {
     private timeout: number;
     private log: IBaseLogger;
 
-    private device: Device;
+    private device: ModbusDevice;
     private frameDefinition: FrameDefinition;
     private onDataReceived?: (value: any, buffer: Buffer, parseConfiguration: ModbusRegisterParseConfiguration) => Promise<void>;
     onError?: (error: unknown, register: ModbusRegister) => Promise<void>;
@@ -58,7 +58,7 @@ export class Solarman implements IAPI {
      * @param {number} timeout Socket timeout in seconds (default: 60)
      * @memberof Solarman
      */
-    constructor(log: IBaseLogger, device: Device, ipAddress: string, serialNumber: string, port: number = 8899, slaveId: number = 1, timeout: number = 5) {
+    constructor(log: IBaseLogger, device: ModbusDevice, ipAddress: string, serialNumber: string, port: number = 8899, slaveId: number = 1, timeout: number = 5) {
         this.ipAddress = ipAddress;
         this.port = port;
         this.serialNumber = serialNumber;
@@ -73,7 +73,7 @@ export class Solarman implements IAPI {
         throw new Error('Method not implemented.');
     }
 
-    getDeviceModel(): Device {
+    getDeviceModel(): ModbusDevice {
         return this.device;
     }
 

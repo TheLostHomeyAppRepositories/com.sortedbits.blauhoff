@@ -1,4 +1,4 @@
-import { IAPI } from '../../../api/iapi';
+import { IAPI, IAPI2 } from '../../../api/iapi';
 import { IBaseLogger } from '../../../helpers/log';
 
 export enum SupportedFlowTypes {
@@ -31,6 +31,6 @@ export const getSupportedFlowTypeKeys = (): SupportedFlowTypes[] => {
 
 export interface SupportedFlows {
     actions?: {
-        [id in SupportedFlowTypes]?: (origin: IBaseLogger, args: any, client: IAPI) => Promise<void>;
+        [id in SupportedFlowTypes]?: (origin: IBaseLogger, args: any, client: IAPI2) => Promise<void>;
     };
 }

@@ -9,34 +9,43 @@ import Homey from 'homey';
 import { addCapabilityIfNotExists, capabilityChange, deprecateCapability } from 'homey-helpers';
 
 import { DateTime } from 'luxon';
-import { IAPI } from '../api/iapi';
+import { IAPI, IAPI2, RegisterOutput } from '../api/iapi';
 import { ModbusAPI } from '../api/modbus/modbus-api';
 import { Solarman } from '../api/solarman/solarman';
 import { DeviceRepository } from '../repositories/device-repository/device-repository';
 import { orderModbusRegisters } from '../repositories/device-repository/helpers/order-modbus-registers';
-import { Device } from '../repositories/device-repository/models/device';
+import { ModbusDevice } from '../repositories/device-repository/models/modbus-device';
 import { AccessMode } from '../repositories/device-repository/models/enum/access-mode';
 import { DeviceType, ModbusRegister, ModbusRegisterParseConfiguration } from '../repositories/device-repository/models/modbus-register';
 import { BaseDriver } from './base-driver';
 import { parse } from 'path';
+import { ModbusAPI2 } from '../api/modbus/modbus-api2';
+import { delay } from '../helpers/delay';
+
+const DEFAULT_UNAVAILABLE_TIMEOUT = 180; // 3 minutes of no data marks the device as unavailable
 
 export class BaseDevice extends Homey.Device {
-    private api?: IAPI;
+    private api?: IAPI2;
     private reachable: boolean = false;
     private readRegisterTimeout: NodeJS.Timeout | undefined;
     private connectTimeout: NodeJS.Timeout | undefined;
-    private device!: Device;
+    private device!: ModbusDevice;
     private enabled: boolean = true;
 
     private runningRequest: boolean = false;
 
     private lastRequest?: DateTime;
-    private lastValidRequest?: DateTime;
+    private lastSuccessfullRead?: DateTime;
+
+    private runningRequestCount: number = 0;
+    private isStopping: boolean = false;
 
     private isInInvalidState: { [id: string]: boolean } = {};
 
     batteryDevice?: BaseDevice;
     inverterDevice?: BaseDevice;
+
+    private availabilityTimeoutId: undefined | ReturnType<typeof setTimeout>;
 
     private lastState: { [id: string]: boolean } = {};
 
@@ -58,26 +67,13 @@ export class BaseDevice extends Homey.Device {
         //        }
     }
 
-    private onDisconnect = async () => {
-        if (this.readRegisterTimeout) {
-            clearTimeout(this.readRegisterTimeout);
+    get isAvailable(): boolean {
+        if (this.lastSuccessfullRead) {
+            const diff = DateTime.now().diff(this.lastSuccessfullRead, 'seconds').seconds;
+            return (diff < DEFAULT_UNAVAILABLE_TIMEOUT);
         }
-
-        if (!this.api) {
-            return;
-        }
-
-        const isOpen = await this.api.connect();
-
-        if (!isOpen) {
-            await this.setUnavailable('Modbus connection unavailable');
-
-            this.homey.setTimeout(this.onDisconnect, 60000);
-        } else {
-            await this.setAvailable();
-            await this.readRegisters();
-        }
-    };
+        return false;
+    }
 
     private updateDeviceAvailability = async (value: boolean) => {
         const current = await this.getCapabilityValue('readable_boolean.device_status');
@@ -88,92 +84,6 @@ export class BaseDevice extends Homey.Device {
             const trigger = value ? 'device_went_online' : 'device_went_offline';
             const triggerCard = this.homey.flow.getTriggerCard(trigger);
             await triggerCard.trigger(this, {});
-        }
-    };
-
-    /**
-     * Handles the value received from a Modbus register.
-     *
-     * @param value - The value received from the Modbus register.
-     * @param register - The Modbus register object.
-     * @returns A Promise that resolves when the value is handled.
-     */
-    onDataReceived = async (value: any, buffer: Buffer, parseConfiguration: ModbusRegisterParseConfiguration) => {
-        const { battery } = this.getData();
-
-        const deviceType = battery ? DeviceType.BATTERY : DeviceType.SOLAR;
-
-        if (parseConfiguration.register.deviceTypes.indexOf(deviceType) > -1) {
-            const result = parseConfiguration.calculateValue(value, buffer, this);
-
-            const validationResult = parseConfiguration.validateValue(result, this);
-            if (!validationResult.valid) {
-                this.filteredError('Received invalid value', parseConfiguration.capabilityId, result);
-
-                if (!this.isInInvalidState[parseConfiguration.capabilityId]) {
-                    const c = this.homey.flow.getDeviceTriggerCard('invalid_value_received');
-                    await c.trigger(this, { capability: parseConfiguration.capabilityId, value: result });
-
-                    this.isInInvalidState[parseConfiguration.capabilityId] = true;
-                }
-                return;
-            }
-
-            delete this.isInInvalidState[parseConfiguration.capabilityId];
-
-            this.lastValidRequest = DateTime.utc();
-
-            await capabilityChange(this, parseConfiguration.capabilityId, result);
-
-            this.lastState[parseConfiguration.capabilityId] = result;
-
-            parseConfiguration.currentValue = result;
-
-            if (!this.reachable) {
-                this.reachable = true;
-            }
-
-            const localTimezone = this.homey.clock.getTimezone();
-            const date = DateTime.now();
-            const localDate = date.setZone(localTimezone);
-
-            await capabilityChange(this, 'date.record', localDate.toFormat('HH:mm:ss'));
-
-            const dependendantStateCalculations = this.device.getStateCalculations(deviceType).filter(s => (s.dependecies && s.dependecies.indexOf(parseConfiguration.capabilityId) > -1) || s.dependecies === undefined);
-
-            if (dependendantStateCalculations.length > 0) {
-                for (const calc of dependendantStateCalculations) {
-                    const result = await calc.calculation(this, this.lastState);
-                    await capabilityChange(this, calc.capabilityId, result);
-                }
-            }
-
-        }
-        if (!battery && this.batteryDevice) {
-            try {
-                (this.batteryDevice as BaseDevice).onDataReceived(value, buffer, parseConfiguration);
-            } catch (err) {
-                this.error(`Failed to update battery`);
-            }
-        }
-
-        await this.updateDeviceAvailability(true);
-    };
-
-    /**
-     * Handles the error that occurs during a Modbus operation.
-     * If the error is a TransactionTimedOutError, sets the device as unreachable.
-     * Otherwise, logs the error message.
-     *
-     * @param error - The error that occurred.
-     * @param register - The Modbus register associated with the error.
-     */
-    private onError = async (error: unknown, register: ModbusRegister) => {
-        if (error && (error as any)['name'] && (error as any)['name'] === 'TransactionTimedOutError') {
-            this.reachable = false;
-            await this.updateDeviceAvailability(false);
-        } else {
-            this.filteredError('Request failed', error);
         }
     };
 
@@ -200,42 +110,34 @@ export class BaseDevice extends Homey.Device {
         }
     };
 
-    /**
-     * Establishes a connection to the Modbus device.
-     * @returns {Promise<void>} A promise that resolves when the connection is established.
-     */
-    private connect = async () => {
-        const { host, port, unitId, solarman, serial, enabled } = this.getSettings();
-        const { deviceType, modelId, battery } = this.getData();
+    private setApi = async (): Promise<void> => {
+        const { host, port, unitId } = this.getSettings();
 
-        if (battery) {
-            return;
+        const { modelId, battery, batteryId } = this.getData();
+        const { removedBattery, removedInverter, version } = this.getSettings();
+
+        if (this.enabled) {
+            await this.initializeCapabilities(battery);
+
+            if (!battery) {
+                this.api = new ModbusAPI2(modelId, {
+                    host,
+                    port,
+                    unitId
+                }, this);
+            }
+        } else {
+            await this.setUnavailable('Device is disabled');
+            this.filteredLog('ModbusDevice is disabled');
         }
-
-        if (this.readRegisterTimeout) {
-            clearTimeout(this.readRegisterTimeout);
-        }
-
-        this.filteredLog('ModbusDevice', host, port, unitId, deviceType, modelId, enabled);
-
-
-        this.api = solarman ? new Solarman(this, this.device, host, serial, 8899, 1) : new ModbusAPI(this, host, port, unitId, this.device);
-        this.api.setOnDataReceived(this.onDataReceived);
-        this.api?.setOnError(this.onError);
-        this.api?.setOnDisconnect(this.onDisconnect);
-
-        const isOpen = await this.api.connect();
-
-        if (isOpen) {
-            await this.readRegisters();
-        }
-    };
+    }
 
     /**
      * onInit is called when the device is initialized.
      */
     async onInit() {
         await super.onInit();
+        const { host, port, unitId } = this.getSettings();
 
         const { modelId, battery, batteryId } = this.getData();
         const { removedBattery, removedInverter, version } = this.getSettings();
@@ -308,13 +210,19 @@ export class BaseDevice extends Homey.Device {
             await this.initializeCapabilities(battery);
 
             if (!battery) {
-                await this.connect();
+                this.api = new ModbusAPI2(modelId, {
+                    host,
+                    port,
+                    unitId
+                }, this);
+
+                this.readRegisters();
+
             }
         } else {
             await this.setUnavailable('Device is disabled');
             this.filteredLog('ModbusDevice is disabled');
         }
-
     }
 
     private tryConnectBattery = () => {
@@ -360,38 +268,160 @@ export class BaseDevice extends Homey.Device {
         }
     }
 
+    handleResults = async (registerValues: RegisterOutput[]) => {
+        const { battery } = this.getData();
+
+        const deviceType = battery ? DeviceType.BATTERY : DeviceType.SOLAR;
+
+        for (const registerValue of registerValues) {
+            const correctDeviceType = registerValue.parseConfiguration.register.deviceTypes.includes(deviceType);
+
+            if (correctDeviceType) {
+                const parseConfiguration = registerValue.parseConfiguration;
+
+                const result = parseConfiguration.calculateValue(registerValue.value, registerValue.buffer, this);
+
+                const validationResult = parseConfiguration.validateValue(result, this);
+
+                if (!validationResult.valid) {
+                    this.filteredError('Received invalid value', parseConfiguration.capabilityId, result);
+
+                    if (!this.isInInvalidState[parseConfiguration.capabilityId]) {
+                        const c = this.homey.flow.getDeviceTriggerCard('invalid_value_received');
+                        await c.trigger(this, { capability: parseConfiguration.capabilityId, value: result });
+
+                        this.isInInvalidState[parseConfiguration.capabilityId] = true;
+                    }
+                    return;
+                }
+
+                delete this.isInInvalidState[parseConfiguration.capabilityId];
+                await capabilityChange(this, parseConfiguration.capabilityId, result);
+
+                this.lastState[parseConfiguration.capabilityId] = result;
+
+                parseConfiguration.currentValue = result;
+
+                if (!this.reachable) {
+                    this.reachable = true;
+                }
+
+                const dependendantStateCalculations = this.device.getStateCalculations(deviceType).filter(s => (s.dependecies && s.dependecies.indexOf(parseConfiguration.capabilityId) > -1) || s.dependecies === undefined);
+
+                if (dependendantStateCalculations.length > 0) {
+                    for (const calc of dependendantStateCalculations) {
+                        const result = await calc.calculation(this, this.lastState);
+                        await capabilityChange(this, calc.capabilityId, result);
+                    }
+                }
+            }
+        }
+
+        if (!battery && this.batteryDevice) {
+            try {
+                (this.batteryDevice as BaseDevice).handleResults(registerValues);
+            } catch (err) {
+                this.error('Could not update battery', err);
+            }
+        }
+
+        this.lastSuccessfullRead = DateTime.now();
+
+        const localTimezone = this.homey.clock.getTimezone();
+        const localDate = this.lastSuccessfullRead.setZone(localTimezone);
+
+        await capabilityChange(this, 'date.record', localDate.toFormat('HH:mm:ss'));
+
+    }
+
     /**
      * Reads the registers from the device.
      *
      * @returns {Promise<void>} A promise that resolves when the registers are read.
      */
     private readRegisters = async () => {
-        if (!this.api) {
-            this.filteredError('ModbusAPI is not initialized');
+        const { battery } = this.getData();
+
+        if (battery) {
             return;
         }
 
-        this.lastRequest = DateTime.utc();
+        if (!this.api) {
+            this.log('ModbusAPI is not initialized');
+            return;
+        }
 
-        const diff = this.lastValidRequest ? this.lastRequest.diff(this.lastValidRequest, 'minutes').minutes : 0;
+        if (this.runningRequest && this.runningRequestCount > 2) {
+            this.log('Cancelling `readRegisters` as there are already too many requests running');
+            return;
+        }
+
+        this.runningRequestCount++;
+
+        if (this.readRegisterTimeout) {
+            this.homey.clearTimeout(this.readRegisterTimeout);
+            this.readRegisterTimeout = undefined;
+        }
+
         const { refreshInterval } = this.getSettings();
 
-        if (diff > Math.max(2, refreshInterval / 60)) {
-            await this.updateDeviceAvailability(false);
-        }
 
-        if (!this.enabled) {
-            this.filteredLog('ModbusDevice is disabled, returning');
-            return;
+        if (this.runningRequest) {
+            this.log('Request already running, waiting for it to finish');
         }
 
         while (this.runningRequest) {
-            await new Promise((resolve) => setTimeout(resolve, 200));
+            await delay(500);
         }
 
         this.runningRequest = true;
 
+        try {
+            const results = await this.api.readRegisters();
+            await this.handleResults(results);
+        } catch (error: Error | any) {
+            if (error.name === 'TransactionTimedOutError') {
+                this.log('Transaction timed out');
+            } else {
+                this.log('Failed to read registers', JSON.stringify(error));
+            }
+        } finally {
+            this.runningRequest = false;
+            this.runningRequestCount--;
 
+            const interval = this.isAvailable ? Math.max(refreshInterval, 2) * 1000 : 60000;
+
+            if (!this.isAvailable) {
+                this.log('Device is not reachable, retrying in 60 seconds');
+            }
+
+            if (!this.isStopping) {
+                this.readRegisterTimeout = this.homey.setTimeout(this.readRegisters.bind(this), interval);
+            }
+        }
+
+        /*
+    
+        this.lastRequest = DateTime.utc();
+    
+        const diff = this.lastValidRequest ? this.lastRequest.diff(this.lastValidRequest, 'minutes').minutes : 0;
+    
+        if (diff > Math.max(2, refreshInterval / 60)) {
+            await this.updateDeviceAvailability(false);
+        }
+    
+        if (!this.enabled) {
+            this.filteredLog('ModbusDevice is disabled, returning');
+            return;
+        }
+    
+        while (this.runningRequest) {
+            await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+    
+        this.runningRequest = true;
+    
+    
         try {
             await this.api.readRegistersInBatch();
         } catch (error) {
@@ -399,9 +429,10 @@ export class BaseDevice extends Homey.Device {
         } finally {
             this.runningRequest = false;
         }
-
+    
         const interval = this.reachable ? (refreshInterval < 5 ? 5 : refreshInterval) * 1000 : 60000;
         this.readRegisterTimeout = await this.homey.setTimeout(this.readRegisters.bind(this), interval);
+        */
     };
 
     /**
@@ -436,10 +467,6 @@ export class BaseDevice extends Homey.Device {
             clearTimeout(this.readRegisterTimeout);
         }
 
-        if (this.api?.isConnected()) {
-            await this.api?.disconnect();
-        }
-
         if (this.enabled !== undefined) {
             this.enabled = newSettings['enabled'] as boolean;
         }
@@ -447,7 +474,7 @@ export class BaseDevice extends Homey.Device {
         if (this.enabled) {
             this.filteredLog('ModbusDevice is enabled');
             await this.setAvailable();
-            await this.connect();
+            await this.setApi();
         } else {
             this.filteredLog('ModbusDevice is disabled');
             await this.setUnavailable('Device is disabled');
@@ -474,10 +501,6 @@ export class BaseDevice extends Homey.Device {
 
             if (this.readRegisterTimeout) {
                 this.homey.clearTimeout(this.readRegisterTimeout);
-            }
-
-            if (this.api?.isConnected()) {
-                await this.api?.disconnect();
             }
 
             if (this.batteryDevice) {

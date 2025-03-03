@@ -1,8 +1,8 @@
-import { Device } from '../repositories/device-repository/models/device';
+import { ModbusDevice } from '../repositories/device-repository/models/modbus-device';
 import { ModbusRegister, ModbusRegisterParseConfiguration } from '../repositories/device-repository/models/modbus-register';
 
 export interface IAPI {
-    getDeviceModel(): Device;
+    getDeviceModel(): ModbusDevice;
 
     setOnDataReceived(onDataReceived: (value: any, buffer: Buffer, parseConfiguration: ModbusRegisterParseConfiguration) => Promise<void>): void;
     setOnError(onError: (error: unknown, register: ModbusRegister) => Promise<void>): void;
@@ -22,4 +22,24 @@ export interface IAPI {
     writeValueToRegister(args: any): Promise<void>;
     writeBufferRegister(register: ModbusRegister, buffer: Buffer): Promise<boolean>;
     writeBitsToRegister(register: ModbusRegister, bits: number[], bitIndex: number): Promise<boolean>;
+}
+
+export interface RegisterOutput {
+    register: ModbusRegister;
+    value: any;
+    buffer: Buffer;
+    parseConfiguration: ModbusRegisterParseConfiguration;
+}
+
+export interface IAPI2 {
+    getDevice(): ModbusDevice;
+
+    readRegisters(): Promise<Array<RegisterOutput>>;
+
+    writeRegister(register: ModbusRegister, value: any): Promise<boolean>;
+    writeRegisters(startRegister: ModbusRegister, values: any[]): Promise<boolean>;
+    writeBufferRegister(register: ModbusRegister, buffer: Buffer): Promise<boolean>;
+    writeBitsToRegister(register: ModbusRegister, bits: number[], bitIndex: number): Promise<boolean>;
+    readAddressWithoutConversion(register: ModbusRegister): Promise<Buffer | undefined>;
+    writeValueToRegister(args: any): Promise<void>
 }

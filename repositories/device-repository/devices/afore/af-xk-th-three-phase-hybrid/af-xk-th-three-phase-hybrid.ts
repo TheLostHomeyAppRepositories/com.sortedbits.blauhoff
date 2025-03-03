@@ -5,9 +5,9 @@
  * Non-commercial use only
  */
 
-import { IAPI } from '../../../../../api/iapi';
+import { IAPI, IAPI2 } from '../../../../../api/iapi';
 import { IBaseLogger } from '../../../../../helpers/log';
-import { Device } from '../../../models/device';
+import { ModbusDevice } from '../../../models/modbus-device';
 import { Brand } from '../../../models/enum/brand';
 import { bufferForDataType } from '../../../models/enum/register-datatype';
 import { RegisterType } from '../../../models/enum/register-type';
@@ -15,7 +15,7 @@ import { DeviceType } from '../../../models/modbus-register';
 import { holdingRegisters } from './holding-registers';
 import { inputRegisters } from './input-registers';
 
-export class AforeAFXKTH extends Device {
+export class AforeAFXKTH extends ModbusDevice {
     constructor() {
         super('af-xk-th-three-phase-hybrid', Brand.Afore, 'BlauHoff AF XK-TH', 'BlauHoff Afore AF XK-TH Three Phase Hybrid Inverter Series', true);
 
@@ -39,11 +39,11 @@ export class AforeAFXKTH extends Device {
         this.addHoldingRegisters(holdingRegisters);
     }
 
-    writeValueToRegister = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    writeValueToRegister = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         client.writeValueToRegister(args);
     };
 
-    setChargeCommand = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setChargeCommand = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const emsRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2500);
         const commandRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2501);
         const powerRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2502);
@@ -77,7 +77,7 @@ export class AforeAFXKTH extends Device {
         }
     };
 
-    setEmsMode = async (origin: IBaseLogger, args: { mode: number }, client: IAPI): Promise<void> => {
+    setEmsMode = async (origin: IBaseLogger, args: { mode: number }, client: IAPI2): Promise<void> => {
         const emsRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2500);
 
         if (emsRegister === undefined) {
@@ -110,7 +110,7 @@ export class AforeAFXKTH extends Device {
         }
     };
 
-    setAcChargingTimeslot = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setAcChargingTimeslot = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const { timeslot, starttime, endtime } = args;
         if (timeslot < 1 || timeslot > 4) {
             origin.error('Value out of range');
@@ -152,7 +152,7 @@ export class AforeAFXKTH extends Device {
         }
     };
 
-    setTimingAcChargeOff = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setTimingAcChargeOff = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const register = this.getRegisterByTypeAndAddress(RegisterType.Holding, 206);
 
         if (register === undefined) {
@@ -168,7 +168,7 @@ export class AforeAFXKTH extends Device {
         }
     };
 
-    setTimingAcChargeOn = async (origin: IBaseLogger, args: any, client: IAPI): Promise<void> => {
+    setTimingAcChargeOn = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {
         const enabledRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 206);
         const acpchgmaxRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2504);
         const acsocmaxchgRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2505);

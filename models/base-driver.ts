@@ -11,7 +11,7 @@ import { ModbusAPI } from '../api/modbus/modbus-api';
 import { Solarman } from '../api/solarman/solarman';
 import { DeviceRepository } from '../repositories/device-repository/device-repository';
 import { getBrand, getDeviceModelName } from '../repositories/device-repository/helpers/brand-name';
-import { Device } from '../repositories/device-repository/models/device';
+import { ModbusDevice } from '../repositories/device-repository/models/modbus-device';
 import { Brand } from '../repositories/device-repository/models/enum/brand';
 import { ModbusRegisterParseConfiguration } from '../repositories/device-repository/models/modbus-register';
 import { parse } from 'path';
@@ -192,7 +192,7 @@ export class BaseDriver extends Homey.Driver {
         return { success: false, message: 'Failed to connect to the device' };
     };
 
-    verifyConnection = async (host: string, port: number, unitId: number, deviceModel: Device, solarman: boolean, serial: string): Promise<boolean> => {
+    verifyConnection = async (host: string, port: number, unitId: number, deviceModel: ModbusDevice, solarman: boolean, serial: string): Promise<boolean> => {
         this.log('verifyConnection', host, port, unitId, deviceModel.id, solarman, serial);
 
         const api = solarman ? new Solarman(this, deviceModel, host, serial) : new ModbusAPI(this, host, port, unitId, deviceModel);

@@ -1,4 +1,4 @@
-import { IAPI } from '../../../api/iapi';
+import { IAPI, IAPI2 } from '../../../api/iapi';
 import { IBaseLogger } from '../../../helpers/log';
 import { BaseDevice } from '../../../models/base-device';
 import { defaultValueConverter } from '../helpers/default-value-converter';
@@ -18,7 +18,7 @@ interface StateCalculation {
     dependecies?: string[];
 }
 
-export class Device {
+export class ModbusDevice {
     private isRunningAction = false;
 
     public hasBattery: boolean;
@@ -136,7 +136,7 @@ export class Device {
         this.hasBattery = hasBattery;
     }
 
-    callAction = async (origin: IBaseLogger, action: string, args: any, api: IAPI): Promise<void> => {
+    callAction = async (origin: IBaseLogger, action: string, args: any, api: IAPI2): Promise<void> => {
         const flowType = SupportedFlowTypes[action as keyof typeof SupportedFlowTypes];
 
         if (!this.supportedFlows?.actions) {
@@ -164,14 +164,14 @@ export class Device {
         }
     };
 
-    addInputRegisters(registers: ModbusRegister[]): Device {
+    addInputRegisters(registers: ModbusRegister[]): ModbusDevice {
         registers.forEach((register) => (register.registerType = RegisterType.Input));
 
         this.inputRegisters.push(...registers);
         return this;
     }
 
-    addHoldingRegisters(registers: ModbusRegister[]): Device {
+    addHoldingRegisters(registers: ModbusRegister[]): ModbusDevice {
         registers.forEach((register) => (register.registerType = RegisterType.Holding));
 
         this.holdingRegisters.push(...registers);

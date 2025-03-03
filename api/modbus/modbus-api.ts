@@ -11,7 +11,7 @@ import { logBits, writeBitsToBuffer } from '../../helpers/bits';
 import { IBaseLogger } from '../../helpers/log';
 import { validateValue } from '../../helpers/validate-value';
 import { createRegisterBatches } from '../../repositories/device-repository/helpers/register-batches';
-import { Device } from '../../repositories/device-repository/models/device';
+import { ModbusDevice } from '../../repositories/device-repository/models/modbus-device';
 import { AccessMode } from '../../repositories/device-repository/models/enum/access-mode';
 import { RegisterType } from '../../repositories/device-repository/models/enum/register-type';
 import { ModbusRegister, ModbusRegisterParseConfiguration } from '../../repositories/device-repository/models/modbus-register';
@@ -27,14 +27,14 @@ export class ModbusAPI implements IAPI {
     private port: number;
     private unitId: number;
     private log: IBaseLogger;
-    private device: Device;
+    private device: ModbusDevice;
     private disconnecting: boolean = false;
 
     isConnected(): boolean {
         return this.client.isOpen;
     }
 
-    getDeviceModel(): Device {
+    getDeviceModel(): ModbusDevice {
         return this.device;
     }
 
@@ -75,7 +75,7 @@ export class ModbusAPI implements IAPI {
      * @param unitId - The unit ID.
      * @param deviceModel - The Modbus device information.
      */
-    constructor(log: IBaseLogger, host: string, port: number, unitId: number, device: Device) {
+    constructor(log: IBaseLogger, host: string, port: number, unitId: number, device: ModbusDevice) {
         this.host = host;
         this.port = port;
         this.unitId = unitId;
@@ -144,7 +144,7 @@ export class ModbusAPI implements IAPI {
      */
     disconnect = () => {
         this.disconnecting = true;
-        this.client.close(() => {});
+        this.client.close(() => { });
     };
 
     /**
