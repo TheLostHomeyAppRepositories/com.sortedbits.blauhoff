@@ -9,16 +9,11 @@ import Homey from 'homey';
 import { addCapabilityIfNotExists, capabilityChange, deprecateCapability } from 'homey-helpers';
 
 import { DateTime } from 'luxon';
-import { IAPI, IAPI2, RegisterOutput } from '../api/iapi';
-import { ModbusAPI } from '../api/modbus/modbus-api';
-import { Solarman } from '../api/solarman/solarman';
+import { IAPI2, RegisterOutput } from '../api/iapi';
 import { DeviceRepository } from '../repositories/device-repository/device-repository';
-import { orderModbusRegisters } from '../repositories/device-repository/helpers/order-modbus-registers';
 import { ModbusDevice } from '../repositories/device-repository/models/modbus-device';
-import { AccessMode } from '../repositories/device-repository/models/enum/access-mode';
-import { DeviceType, ModbusRegister, ModbusRegisterParseConfiguration } from '../repositories/device-repository/models/modbus-register';
+import { DeviceType } from '../repositories/device-repository/models/modbus-register';
 import { BaseDriver } from './base-driver';
-import { parse } from 'path';
 import { ModbusAPI2 } from '../api/modbus/modbus-api2';
 import { delay } from '../helpers/delay';
 
@@ -44,8 +39,6 @@ export class BaseDevice extends Homey.Device {
 
     batteryDevice?: BaseDevice;
     inverterDevice?: BaseDevice;
-
-    private availabilityTimeoutId: undefined | ReturnType<typeof setTimeout>;
 
     private lastState: { [id: string]: boolean } = {};
 
@@ -92,6 +85,11 @@ export class BaseDevice extends Homey.Device {
      * @param definition The Modbus device definition.
      */
     private initializeCapabilities = async (isBattery: boolean) => {
+        if (!this.device) {
+            this.setUnavailable('Device is not correctly set');
+            return;
+        }
+
         const deviceType = isBattery ? DeviceType.BATTERY : DeviceType.SOLAR;
 
         const capabilities = this.device.getAllCapabilities(deviceType);
@@ -113,8 +111,18 @@ export class BaseDevice extends Homey.Device {
     private setApi = async (): Promise<void> => {
         const { host, port, unitId } = this.getSettings();
 
-        const { modelId, battery, batteryId } = this.getData();
-        const { removedBattery, removedInverter, version } = this.getSettings();
+        const { modelId, battery } = this.getData();
+
+        if (!this.device) {
+            const result = DeviceRepository.getInstance().getDeviceById(modelId);
+
+            if (result) {
+                this.device = result;
+            } else {
+                this.setUnavailable(`Could not find your device with model ${modelId}`);
+                return;
+            }
+        }
 
         if (this.enabled) {
             await this.initializeCapabilities(battery);
@@ -137,8 +145,6 @@ export class BaseDevice extends Homey.Device {
      */
     async onInit() {
         await super.onInit();
-        const { host, port, unitId } = this.getSettings();
-
         const { modelId, battery, batteryId } = this.getData();
         const { removedBattery, removedInverter, version } = this.getSettings();
 
@@ -155,9 +161,10 @@ export class BaseDevice extends Homey.Device {
         const result = DeviceRepository.getInstance().getDeviceById(modelId);
 
         if (!result) {
-            this.filteredError('Unknown device type', modelId);
-            throw new Error('Unknown device type');
+            this.setUnavailable(`Could not find your device with model ${modelId}`);
+            return;
         }
+
         this.device = result;
 
         this.log(`Removed battery: ${result.name} ${removedBattery}`)
@@ -207,18 +214,12 @@ export class BaseDevice extends Homey.Device {
         this.enabled = enabled;
 
         if (this.enabled) {
-            await this.initializeCapabilities(battery);
+            await this.setApi();
 
             if (!battery) {
-                this.api = new ModbusAPI2(modelId, {
-                    host,
-                    port,
-                    unitId
-                }, this);
-
                 this.readRegisters();
-
             }
+
         } else {
             await this.setUnavailable('Device is disabled');
             this.filteredLog('ModbusDevice is disabled');
@@ -399,40 +400,6 @@ export class BaseDevice extends Homey.Device {
                 this.readRegisterTimeout = this.homey.setTimeout(this.readRegisters.bind(this), interval);
             }
         }
-
-        /*
-    
-        this.lastRequest = DateTime.utc();
-    
-        const diff = this.lastValidRequest ? this.lastRequest.diff(this.lastValidRequest, 'minutes').minutes : 0;
-    
-        if (diff > Math.max(2, refreshInterval / 60)) {
-            await this.updateDeviceAvailability(false);
-        }
-    
-        if (!this.enabled) {
-            this.filteredLog('ModbusDevice is disabled, returning');
-            return;
-        }
-    
-        while (this.runningRequest) {
-            await new Promise((resolve) => setTimeout(resolve, 200));
-        }
-    
-        this.runningRequest = true;
-    
-    
-        try {
-            await this.api.readRegistersInBatch();
-        } catch (error) {
-            this.filteredError('Error reading registers', error);
-        } finally {
-            this.runningRequest = false;
-        }
-    
-        const interval = this.reachable ? (refreshInterval < 5 ? 5 : refreshInterval) * 1000 : 60000;
-        this.readRegisterTimeout = await this.homey.setTimeout(this.readRegisters.bind(this), interval);
-        */
     };
 
     /**
