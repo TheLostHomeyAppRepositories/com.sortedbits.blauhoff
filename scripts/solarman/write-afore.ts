@@ -40,7 +40,7 @@ if (!device) {
 }
 
 const solarmanApi = new ModbusAPI2(deviceId, {
-    host, port, unitId
+    host, port, unitId, timeout: 5000
 }, log);
 
 const perform = async (): Promise<void> => {

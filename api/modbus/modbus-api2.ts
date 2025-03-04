@@ -15,7 +15,7 @@ export interface ModbusConnectionOptions {
     host: string;
     port: number;
     unitId: number;
-    timeout?: number;
+    timeout: number;
 }
 
 export class ModbusAPI2 implements IAPI2 {
@@ -302,11 +302,11 @@ export class ModbusAPI2 implements IAPI2 {
         await client.connectTCP(host, {
             port,
             keepAlive: true,
-            timeout: timeout ?? 5000
+            timeout: timeout
         });
 
         client.setID(unitId);
-        client.setTimeout(timeout ?? 5000);
+        client.setTimeout(timeout);
 
         client.on('error', error => {
             this.log.error(error);

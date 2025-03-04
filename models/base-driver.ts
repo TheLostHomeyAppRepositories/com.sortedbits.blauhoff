@@ -88,16 +88,16 @@ export class BaseDriver extends Homey.Driver {
                 modelId: this.pairingDeviceModelId,
                 battery: battery,
                 batteryId: !battery && device?.hasBattery ? this.deviceInformationToId(deviceInformation, true) : undefined,
-                version: 3,
             },
             settings: {
                 host: deviceInformation.host,
                 port: Number(deviceInformation.port ?? 502),
                 unitId: Number(deviceInformation.unitId ?? 1),
                 refreshInterval: 10,
-                solarman: false, // deviceInformation.solarman,
+                solarman: deviceInformation.solarman,
                 serial: deviceInformation.serial,
                 enabled: true,
+                version: 3,
             },
         };
 

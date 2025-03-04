@@ -16,6 +16,7 @@ import { DeviceType } from '../repositories/device-repository/models/modbus-regi
 import { BaseDriver } from './base-driver';
 import { ModbusAPI2 } from '../api/modbus/modbus-api2';
 import { delay } from '../helpers/delay';
+import { SolarmanAPI2 } from '../api/solarman/solarman-api2';
 
 const DEFAULT_UNAVAILABLE_TIMEOUT = 180; // 3 minutes of no data marks the device as unavailable
 
@@ -29,7 +30,6 @@ export class BaseDevice extends Homey.Device {
 
     private runningRequest: boolean = false;
 
-    private lastRequest?: DateTime;
     private lastSuccessfullRead?: DateTime;
 
     private runningRequestCount: number = 0;
@@ -108,9 +108,30 @@ export class BaseDevice extends Homey.Device {
         }
     };
 
-    private setApi = async (): Promise<void> => {
-        const { host, port, unitId } = this.getSettings();
+    private getApi = (): IAPI2 => {
+        const { solarman, host, port, unitId, serial } = this.getSettings();
+        const { modelId } = this.getData();
 
+        if (solarman) {
+            return new SolarmanAPI2(modelId, {
+                host,
+                port,
+                unitId,
+                timeout: 5000,
+                serial
+            }, this)
+        } else {
+            return new ModbusAPI2(modelId, {
+                host,
+                port,
+                unitId,
+                timeout: 5000
+            }, this);
+        }
+    }
+
+    private setApi = async (): Promise<void> => {
+        const { enabled } = this.getSettings();
         const { modelId, battery } = this.getData();
 
         if (!this.device) {
@@ -124,15 +145,11 @@ export class BaseDevice extends Homey.Device {
             }
         }
 
-        if (this.enabled) {
+        if (enabled) {
             await this.initializeCapabilities(battery);
 
             if (!battery) {
-                this.api = new ModbusAPI2(modelId, {
-                    host,
-                    port,
-                    unitId
-                }, this);
+                this.api = this.getApi();
             }
         } else {
             await this.setUnavailable('Device is disabled');
