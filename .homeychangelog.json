@@ -238,5 +238,8 @@
   },
   "3.2.3": {
     "en": "Fix for Solarman not returning data, I think"
+  },
+  "3.2.4": {
+    "en": "Fix solarman not refreshing data"
   }
 }
