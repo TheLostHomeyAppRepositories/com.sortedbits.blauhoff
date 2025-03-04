@@ -203,19 +203,27 @@ export class SolarmanAPI2 implements IAPI2 {
         await this.waitInQueue('readRegisters');
         const results: Array<RegisterOutput> = [];
 
-        const inputBatches = createRegisterBatches(this.log, this.device.inputRegisters);
-        for (const batch of inputBatches) {
-            const data = await this.readBatch(batch);
-            results.push(...data);
-        }
+        try {
 
-        const holidingBatches = createRegisterBatches(this.log, this.device.holdingRegisters);
-        for (const batch of holidingBatches) {
-            const data = await this.readBatch(batch);
-            results.push(...data);
-        }
+            const inputBatches = createRegisterBatches(this.log, this.device.inputRegisters);
+            for (const batch of inputBatches) {
+                const data = await this.readBatch(batch);
+                results.push(...data);
+            }
 
-        this.log.log(`Found ${results.length} records`);
+            const holidingBatches = createRegisterBatches(this.log, this.device.holdingRegisters);
+            for (const batch of holidingBatches) {
+                const data = await this.readBatch(batch);
+                results.push(...data);
+            }
+
+            this.log.log(`Found ${results.length} records`);
+        }
+        catch (err) {
+            this.log.error(`readRegisters error`, err);
+        } finally {
+            this.busy = false;
+        }
 
         return results;
     };
