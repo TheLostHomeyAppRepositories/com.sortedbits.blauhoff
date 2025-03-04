@@ -232,5 +232,8 @@
   },
   "3.2.1": {
     "en": "Add some error logigng to catch exception."
+  },
+  "3.2.2": {
+    "en": "Add solarman support to latest version"
   }
 }
