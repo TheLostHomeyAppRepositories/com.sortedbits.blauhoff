@@ -457,11 +457,13 @@ export class BaseDevice extends Homey.Device {
 
         if (this.enabled) {
             this.filteredLog('ModbusDevice is enabled');
+            this.isStopping = false;
             await this.setAvailable();
             await this.setApi();
         } else {
             this.filteredLog('ModbusDevice is disabled');
             await this.setUnavailable('Device is disabled');
+            this.isStopping = true;
         }
     }
 

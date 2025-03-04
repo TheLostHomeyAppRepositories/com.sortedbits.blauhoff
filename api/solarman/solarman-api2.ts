@@ -205,13 +205,17 @@ export class SolarmanAPI2 implements IAPI2 {
 
         const inputBatches = createRegisterBatches(this.log, this.device.inputRegisters);
         for (const batch of inputBatches) {
-            await this.readBatch(batch);
+            const data = await this.readBatch(batch);
+            results.push(...data);
         }
 
         const holidingBatches = createRegisterBatches(this.log, this.device.holdingRegisters);
         for (const batch of holidingBatches) {
-            await this.readBatch(batch);
+            const data = await this.readBatch(batch);
+            results.push(...data);
         }
+
+        this.log.log(`Found ${results.length} records`);
 
         return results;
     };
