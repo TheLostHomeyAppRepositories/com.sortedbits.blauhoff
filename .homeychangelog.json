@@ -244,5 +244,8 @@
   },
   "3.2.5": {
     "en": "Allow device to be enabled/disabled, optimize online detection"
+  },
+  "3.2.6": {
+    "en": "Verify connection during pairing"
   }
 }
