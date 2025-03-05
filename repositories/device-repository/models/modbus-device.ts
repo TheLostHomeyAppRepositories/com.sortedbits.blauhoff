@@ -1,6 +1,6 @@
-import { IAPI, IAPI2 } from '../../../api/iapi';
+import { IAPI2 } from '../../../api/iapi';
+import { BlauhoffDevice } from '../../../drivers/blauhoff-modbus/device';
 import { IBaseLogger } from '../../../helpers/log';
-import { BaseDevice } from '../../../models/base-device';
 import { defaultValueConverter } from '../helpers/default-value-converter';
 import { orderModbusRegisters } from '../helpers/order-modbus-registers';
 import { AccessMode } from './enum/access-mode';
@@ -14,7 +14,7 @@ export type DataConverter = (log: IBaseLogger, buffer: Buffer, register: ModbusR
 interface StateCalculation {
     capabilityId: string;
     deviceTypes: DeviceType[];
-    calculation: (device: BaseDevice, state: { [id: string]: any }) => Promise<any>;
+    calculation: (device: BlauhoffDevice, state: { [id: string]: any }) => Promise<any>;
     dependecies?: string[];
 }
 
