@@ -241,5 +241,8 @@
   },
   "3.2.4": {
     "en": "Fix solarman not refreshing data"
+  },
+  "3.2.5": {
+    "en": "Allow device to be enabled/disabled, optimize online detection"
   }
 }
