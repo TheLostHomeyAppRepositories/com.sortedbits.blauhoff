@@ -14,6 +14,9 @@ import { getDeviceModelName, getBrand } from '../../repositories/device-reposito
 import { Brand } from '../../repositories/device-repository/models/enum/brand';
 import { ModbusDevice } from '../../repositories/device-repository/models/modbus-device';
 import { BlauhoffDevice } from './device';
+import { SolarmanAPI2 } from '../../api/solarman/solarman-api2';
+import { ModbusAPI2 } from '../../api/modbus/modbus-api2';
+import { IAPI2 } from '../../api/iapi';
 
 interface DeviceTypeFormData {
     deviceType: string;
@@ -193,15 +196,11 @@ export class BlauhoffDriver extends Homey.Driver {
     verifyConnection = async (host: string, port: number, unitId: number, deviceModel: ModbusDevice, solarman: boolean, serial: string): Promise<boolean> => {
         this.log('verifyConnection', host, port, unitId, deviceModel.id, solarman, serial);
 
-        const api = solarman ? new Solarman(this, deviceModel, host, serial) : new ModbusAPI(this, host, port, unitId, deviceModel);
+        const api = this.getApi(solarman, host, port, unitId, serial, deviceModel.id);
 
-        this.log('Connecting...');
-        const result = await api.connect();
+        const result = await deviceModel.verifyConnection(api, this);
 
-        // api.disconnect();
-        if (result) {
-            this.log('Disconnecting...');
-        }
+        this.dlog(`Verified connection to ${host}:${port}: ${result}`);
 
         return result;
     };
@@ -241,6 +240,25 @@ export class BlauhoffDriver extends Homey.Driver {
             d.setSettings({
                 removedBattery: true
             });
+        }
+    }
+
+    private getApi = (solarman: boolean, host: string, port: number, unitId: number, serial: string, modelId: string): IAPI2 => {
+        if (solarman) {
+            return new SolarmanAPI2(modelId, {
+                host,
+                port,
+                unitId,
+                timeout: 5000,
+                serial
+            }, this)
+        } else {
+            return new ModbusAPI2(modelId, {
+                host,
+                port,
+                unitId,
+                timeout: 5000
+            }, this);
         }
     }
 }

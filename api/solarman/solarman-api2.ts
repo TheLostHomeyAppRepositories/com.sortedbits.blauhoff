@@ -146,16 +146,28 @@ export class SolarmanAPI2 implements IAPI2 {
         return false;
     };
 
-    readAddress = async (register: ModbusRegister): Promise<any> => {
+    readRegister = async (register: ModbusRegister): Promise<Array<RegisterOutput>> => {
+        const result: Array<RegisterOutput> = [];
         const buffer = await this.readAddressWithoutConversion(register);
 
         if (buffer) {
-            const result = this.device.converter(this.log, buffer, register);
-            this.log.dlog('Conversion result', result);
-            return result;
+            const value = this.device.converter(this.log, buffer, register);
+
+            if (validateValue(value, register.dataType)) {
+                for (const parseConfiguration of register.parseConfigurations) {
+                    result.push({
+                        register,
+                        value,
+                        buffer,
+                        parseConfiguration
+                    })
+                }
+            } else {
+                this.log.derror('Invalid value', value, 'for address', register.address, register.dataType);
+            }
         }
 
-        return undefined;
+        return result;
     };
 
     /**

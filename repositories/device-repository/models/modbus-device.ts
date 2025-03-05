@@ -1,6 +1,6 @@
 import { IAPI2 } from '../../../api/iapi';
 import { BlauhoffDevice } from '../../../drivers/blauhoff-modbus/device';
-import { IBaseLogger } from '../../../helpers/log';
+import { IBaseLogger, Logger } from '../../../helpers/log';
 import { defaultValueConverter } from '../helpers/default-value-converter';
 import { orderModbusRegisters } from '../helpers/order-modbus-registers';
 import { AccessMode } from './enum/access-mode';
@@ -134,6 +134,11 @@ export class ModbusDevice {
         this.name = name;
         this.description = description;
         this.hasBattery = hasBattery;
+    }
+
+    verifyConnection = async (api: IAPI2, log: Logger): Promise<boolean> => {
+        log.dlog('verifyConnection not implemented, returning false');
+        return false;
     }
 
     callAction = async (origin: IBaseLogger, action: string, args: any, api: IAPI2): Promise<void> => {

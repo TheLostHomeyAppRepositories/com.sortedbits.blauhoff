@@ -298,6 +298,8 @@ export class BlauhoffDevice extends Homey.Device {
     async onDeleted() {
         const { battery, batteryId, id } = this.getData();
 
+        this.isStopping = true;
+
         if (!battery && batteryId) {
             this.dlog('ModbusDevice has been deleted');
 

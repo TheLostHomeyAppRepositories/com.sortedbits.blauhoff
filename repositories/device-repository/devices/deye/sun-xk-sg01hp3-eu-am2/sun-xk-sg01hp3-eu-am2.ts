@@ -7,7 +7,7 @@
 
 import { IAPI, IAPI2 } from '../../../../../api/iapi';
 import { logBits, writeBitsToBuffer } from '../../../../../helpers/bits';
-import { IBaseLogger } from '../../../../../helpers/log';
+import { IBaseLogger, Logger } from '../../../../../helpers/log';
 import { ModbusDevice } from '../../../models/modbus-device';
 import { Brand } from '../../../models/enum/brand';
 import { RegisterType } from '../../../models/enum/register-type';
@@ -53,6 +53,17 @@ export class DeyeSunXKSG01HP3 extends ModbusDevice {
                 }
             }
         ];
+    }
+
+    verifyConnection = async (api: IAPI2, log: Logger): Promise<boolean> => {
+        const register = this.getRegisterByTypeAndAddress(RegisterType.Holding, 3)
+        if (!register) {
+            return false;
+        }
+
+        const values = await api.readRegister(register);
+
+        return (values.length === 1 && values[0].value !== undefined);
     }
 
     setMaxSolarPower = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {

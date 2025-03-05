@@ -9,6 +9,9 @@ import { ModbusDevice } from '../../../models/modbus-device';
 import { Brand } from '../../../models/enum/brand';
 import { holdingRegisters } from './holding-registers';
 import { inputRegisters } from './input-registers';
+import { IAPI2 } from '../../../../../api/iapi';
+import { Logger } from '../../../../../helpers/log';
+import { RegisterType } from '../../../models/enum/register-type';
 
 export class GrowattTLX extends ModbusDevice {
     constructor() {
@@ -19,5 +22,16 @@ export class GrowattTLX extends ModbusDevice {
 
         this.addInputRegisters(inputRegisters);
         this.addHoldingRegisters(holdingRegisters);
+    }
+
+    verifyConnection = async (api: IAPI2, log: Logger): Promise<boolean> => {
+        const register = this.getRegisterByTypeAndAddress(RegisterType.Holding, 23)
+        if (!register) {
+            return false;
+        }
+
+        const values = await api.readRegister(register);
+
+        return (values.length === 1 && values[0].value !== undefined);
     }
 }

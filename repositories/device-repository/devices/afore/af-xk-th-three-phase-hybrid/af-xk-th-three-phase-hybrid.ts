@@ -6,7 +6,7 @@
  */
 
 import { IAPI, IAPI2 } from '../../../../../api/iapi';
-import { IBaseLogger } from '../../../../../helpers/log';
+import { IBaseLogger, Logger } from '../../../../../helpers/log';
 import { ModbusDevice } from '../../../models/modbus-device';
 import { Brand } from '../../../models/enum/brand';
 import { bufferForDataType } from '../../../models/enum/register-datatype';
@@ -37,6 +37,17 @@ export class AforeAFXKTH extends ModbusDevice {
 
         this.addInputRegisters(inputRegisters);
         this.addHoldingRegisters(holdingRegisters);
+    }
+
+    verifyConnection = async (api: IAPI2, log: Logger): Promise<boolean> => {
+        const register = this.getRegisterByTypeAndAddress(RegisterType.Input, 0)
+        if (!register) {
+            return false;
+        }
+
+        const values = await api.readRegister(register);
+
+        return (values.length === 1 && values[0].value !== undefined);
     }
 
     writeValueToRegister = async (origin: IBaseLogger, args: any, client: IAPI2): Promise<void> => {

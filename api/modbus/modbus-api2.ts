@@ -37,6 +37,31 @@ export class ModbusAPI2 implements IAPI2 {
         return this.device;
     }
 
+    readRegister = async (register: ModbusRegister): Promise<Array<RegisterOutput>> => {
+        const result: Array<RegisterOutput> = [];
+
+        const buffer = await this.readAddressWithoutConversion(register)
+
+        if (buffer) {
+            const value = this.device.converter(this.log, buffer, register);
+
+            if (validateValue(value, register.dataType)) {
+                for (const parseConfiguration of register.parseConfigurations) {
+                    result.push({
+                        register,
+                        value,
+                        buffer,
+                        parseConfiguration
+                    })
+                }
+            } else {
+                this.log.derror('Invalid value', value, 'for address', register.address, register.dataType);
+            }
+        }
+
+        return result;
+    }
+
     readRegisters = async (): Promise<Array<RegisterOutput>> => {
         await this.waitInQueue('readRegisters');
         const results: Array<RegisterOutput> = [];
