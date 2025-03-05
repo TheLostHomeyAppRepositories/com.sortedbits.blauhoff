@@ -35,7 +35,7 @@ const valueResolved = async (value: any, buffer: Buffer, parseConfiguration: Mod
     const result = parseConfiguration.calculateValue(value, buffer, log);
 
     if (!parseConfiguration.validateValue(result, log).valid) {
-        log.filteredError(parseConfiguration.capabilityId, 'INVALID', result);
+        log.derror(parseConfiguration.capabilityId, 'INVALID', result);
     } else {
         log.log(parseConfiguration.capabilityId, result);
     }

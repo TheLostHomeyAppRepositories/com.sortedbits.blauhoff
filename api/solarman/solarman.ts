@@ -78,7 +78,7 @@ export class Solarman implements IAPI {
     }
 
     connect(): Promise<boolean> {
-        this.log.filteredLog(
+        this.log.dlog(
             'Connecting Solarman to ',
             this.ipAddress,
             'on port',
@@ -96,7 +96,7 @@ export class Solarman implements IAPI {
     }
 
     disconnect(): void {
-        this.log.filteredError('Disconnecting');
+        this.log.derror('Disconnecting');
     }
 
     writeRegisters = async (register: ModbusRegister, values: any[]): Promise<boolean> => {
@@ -116,7 +116,7 @@ export class Solarman implements IAPI {
             await this.performRequest(request);
             return true;
         } catch (error) {
-            this.log.filteredError('Error writing register', error);
+            this.log.derror('Error writing register', error);
             return false;
         }
     };
@@ -132,7 +132,7 @@ export class Solarman implements IAPI {
             await this.performRequest(request);
             return true;
         } catch (error) {
-            this.log.filteredError('Error writing buffer', error);
+            this.log.derror('Error writing buffer', error);
             return false;
         }
     };
@@ -141,12 +141,12 @@ export class Solarman implements IAPI {
         const readBuffer = await this.readAddressWithoutConversion(register);
 
         if (readBuffer === undefined) {
-            this.log.filteredError('Failed to read current value');
+            this.log.derror('Failed to read current value');
             return false;
         }
 
         if (readBuffer.length * 8 < bitIndex + bits.length) {
-            this.log.filteredError('Bit index out of range');
+            this.log.derror('Bit index out of range');
             return false;
         }
 
@@ -155,7 +155,7 @@ export class Solarman implements IAPI {
         try {
             return await this.writeBufferRegister(register, result);
         } catch (error) {
-            this.log.filteredError('Error writing bits', error);
+            this.log.derror('Error writing bits', error);
         }
         return false;
     };
@@ -164,12 +164,12 @@ export class Solarman implements IAPI {
         const readBuffer = await this.readAddressWithoutConversion(register);
 
         if (readBuffer === undefined) {
-            this.log.filteredError('Failed to read current value');
+            this.log.derror('Failed to read current value');
             return false;
         }
 
         if (readBuffer.length * 8 < bitIndex + bits.length) {
-            this.log.filteredError('Bit index out of range');
+            this.log.derror('Bit index out of range');
             return false;
         }
 
@@ -178,7 +178,7 @@ export class Solarman implements IAPI {
         try {
             return await this.writeBufferRegister(register, result);
         } catch (error) {
-            this.log.filteredError('Error writing bits', error);
+            this.log.derror('Error writing bits', error);
         }
         return false;
     };
@@ -188,7 +188,7 @@ export class Solarman implements IAPI {
 
         if (buffer) {
             const result = this.device.converter(this.log, buffer, register);
-            this.log.filteredLog('Conversion result', result);
+            this.log.dlog('Conversion result', result);
             return result;
         }
 
@@ -238,7 +238,7 @@ export class Solarman implements IAPI {
 
     readRegistersInBatch = async (): Promise<void> => {
         if (!this.onDataReceived) {
-            this.log.filteredError('No valueResolved function set');
+            this.log.derror('No valueResolved function set');
         }
 
         // this.fakeBatches(this.deviceModel.definition.inputRegisters); //
@@ -275,7 +275,7 @@ export class Solarman implements IAPI {
         }
 
         if (!this.onDataReceived) {
-            this.log.filteredError('No valueResolved function set');
+            this.log.derror('No valueResolved function set');
             return;
         }
 
@@ -289,14 +289,14 @@ export class Solarman implements IAPI {
             const response = await this.performRequest(request);
 
             if (!response) {
-                this.log.filteredError('No response');
+                this.log.derror('No response');
                 return;
             }
 
             const data = parseResponse(this.log, response, batch);
 
             if (data.length !== batch.length) {
-                this.log.filteredError('Mismatch in response length', data.length, batch.length);
+                this.log.derror('Mismatch in response length', data.length, batch.length);
                 return;
             }
 
@@ -312,14 +312,14 @@ export class Solarman implements IAPI {
                             await this.onDataReceived(convertedValue, value, configuration);
                         }
                     } else {
-                        this.log.filteredError('Invalid value', convertedValue, register.registerType, value.length, register.length);
+                        this.log.derror('Invalid value', convertedValue, register.registerType, value.length, register.length);
                     }
                 } catch (error) {
-                    this.log.filteredError('Exception reading for address', register.address, register.dataType, error, value.length, register.length);
+                    this.log.derror('Exception reading for address', register.address, register.dataType, error, value.length, register.length);
                 }
             }
         } catch (error) {
-            this.log.filteredError('Error reading batch', error);
+            this.log.derror('Error reading batch', error);
         }
     };
 
@@ -333,7 +333,7 @@ export class Solarman implements IAPI {
             const result = await this.performRequestQueued(request);
             return result;
         } catch (error) {
-            this.log.filteredError('Error performing request', error);
+            this.log.derror('Error performing request', error);
             return undefined;
         } finally {
             this.runningRequest = false;
@@ -350,7 +350,7 @@ export class Solarman implements IAPI {
                     const wrapped = this.frameDefinition.unwrapResponseFrame(data);
                     resolve(wrapped.buffer);
                 } catch (error) {
-                    this.log.filteredError('Error parsing response', error);
+                    this.log.derror('Error parsing response', error);
                     reject(undefined);
                 } finally {
                     client.end();
@@ -358,13 +358,13 @@ export class Solarman implements IAPI {
             });
 
             client.on('timeout', () => {
-                this.log.filteredError('Timeout');
+                this.log.derror('Timeout');
                 client.end();
                 reject(undefined);
             });
 
             client.on('error', (error) => {
-                this.log.filteredError('Error', error);
+                this.log.derror('Error', error);
                 client.end();
                 resolve(undefined);
             });

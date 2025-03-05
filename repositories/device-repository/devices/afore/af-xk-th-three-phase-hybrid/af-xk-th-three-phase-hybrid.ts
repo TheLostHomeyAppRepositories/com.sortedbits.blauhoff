@@ -99,7 +99,7 @@ export class AforeAFXKTH extends ModbusDevice {
             return;
         }
 
-        origin.filteredLog('Setting EMS mode to', modeNumber, typeof modeNumber);
+        origin.dlog('Setting EMS mode to', modeNumber, typeof modeNumber);
 
         try {
             const emsModeOutput = await client.writeRegister(emsRegister, modeNumber);

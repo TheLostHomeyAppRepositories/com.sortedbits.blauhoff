@@ -19,7 +19,7 @@ import { ModbusRegister } from '../models/modbus-register';
  */
 export const defaultValueConverter = (log: IBaseLogger, buffer: Buffer, register: ModbusRegister): any => {
     if (buffer.length === 0) {
-        log.error('Buffer for ', register.address, 'is empty');
+        log.derror('Buffer for ', register.address, 'is empty');
         return undefined;
     }
 
@@ -39,7 +39,7 @@ export const defaultValueConverter = (log: IBaseLogger, buffer: Buffer, register
         case RegisterDataType.STRING:
             return buffer.toString('utf8');
         default:
-            log.error('Unknown data type', register.dataType);
+            log.derror('Unknown data type', register.dataType);
             return undefined;
     }
 };

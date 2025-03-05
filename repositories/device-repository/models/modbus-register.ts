@@ -77,17 +77,17 @@ export class ModbusRegisterParseConfiguration {
         }
 
         if (!this.transformation && isNaN(parseFloat(value))) {
-            log.filteredError('Received value is not a number', value, this.register.address);
+            log.derror('Received value is not a number', value, this.register.address);
             return { valid: false, message: 'Received value is not a number' };
         }
 
         if (this.options.validValueMax !== undefined && value > this.options.validValueMax) {
-            log.filteredError('Value is above defined max', value, '>', this.options.validValueMax);
+            log.derror('Value is above defined max', value, '>', this.options.validValueMax);
             return { valid: false, message: 'Value is above defined max' };
         }
 
         if (this.options.validValueMin !== undefined && value < this.options.validValueMin) {
-            log.filteredError('Value is below defined min', value, '<', this.options.validValueMin);
+            log.derror('Value is below defined min', value, '<', this.options.validValueMin);
             return { valid: false, message: 'Value is below defined min' };
         }
 

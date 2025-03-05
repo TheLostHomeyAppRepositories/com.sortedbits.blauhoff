@@ -26,7 +26,6 @@ export class BaseDevice extends Homey.Device {
     private readRegisterTimeout: NodeJS.Timeout | undefined;
     private connectTimeout: NodeJS.Timeout | undefined;
     private device!: ModbusDevice;
-    private enabled: boolean = true;
 
     private runningRequest: boolean = false;
 
@@ -46,18 +45,14 @@ export class BaseDevice extends Homey.Device {
         return this.getName();
     };
 
-    public filteredLog(...args: any[]) {
-        const params = [this.logDeviceName(), ...args];
-        //        if (this.device.brand === Brand.Deye || this.device.brand === Brand.Afore) {
+    public dlog(...args: any[]) {
+        const params = [`[${this.logDeviceName()}]`, ...args];
         this.log(...params);
-        //        }
     }
 
-    public filteredError(...args: any[]) {
-        const params = [this.logDeviceName(), ...args];
-        //        if (this.device.brand === Brand.Afore || this.device.brand === Brand.Deye) {
+    public derror(...args: any[]) {
+        const params = [`${this.logDeviceName()}`, ...args];
         this.error(...params);
-        //        }
     }
 
     get isAvailable(): boolean {
@@ -131,7 +126,6 @@ export class BaseDevice extends Homey.Device {
     }
 
     private setApi = async (): Promise<void> => {
-        const { enabled } = this.getSettings();
         const { modelId, battery } = this.getData();
 
         if (!this.device) {
@@ -145,15 +139,10 @@ export class BaseDevice extends Homey.Device {
             }
         }
 
-        if (enabled) {
-            await this.initializeCapabilities(battery);
+        await this.initializeCapabilities(battery);
 
-            if (!battery) {
-                this.api = this.getApi();
-            }
-        } else {
-            await this.setUnavailable('Device is disabled');
-            this.filteredLog('ModbusDevice is disabled');
+        if (!battery) {
+            this.api = this.getApi();
         }
     }
 
@@ -184,7 +173,7 @@ export class BaseDevice extends Homey.Device {
 
         this.device = result;
 
-        this.log(`Removed battery: ${result.name} ${removedBattery}`)
+        this.dlog(`Removed battery: ${result.name} ${removedBattery}`)
 
         if (battery) {
             this.setClass('battery')
@@ -212,25 +201,24 @@ export class BaseDevice extends Homey.Device {
             }
         }
 
-        this.filteredLog('ModbusDevice has been initialized');
+        this.dlog('ModbusDevice has been initialized');
 
         await deprecateCapability(this, 'status_code.device_online');
         await addCapabilityIfNotExists(this, 'readable_boolean.device_status');
         await addCapabilityIfNotExists(this, 'date.record');
 
         const deprecated = this.device.deprecatedCapabilities;
-        this.filteredLog('Deprecated capabilities', deprecated);
+        this.dlog('Deprecated capabilities', deprecated);
         if (deprecated) {
             for (const capability of deprecated) {
-                this.filteredLog('Deprecating capability', capability);
+                this.dlog('Deprecating capability', capability);
                 await deprecateCapability(this, capability);
             }
         }
 
         const { enabled } = this.getSettings();
-        this.enabled = enabled;
 
-        if (this.enabled) {
+        if (enabled) {
             await this.setApi();
 
             if (!battery) {
@@ -239,7 +227,7 @@ export class BaseDevice extends Homey.Device {
 
         } else {
             await this.setUnavailable('Device is disabled');
-            this.filteredLog('ModbusDevice is disabled');
+            this.dlog('ModbusDevice is disabled');
         }
     }
 
@@ -248,7 +236,7 @@ export class BaseDevice extends Homey.Device {
         const { removedBattery } = this.getSettings();
 
         if (removedBattery) {
-            this.log('Battery has been removed from this inverter');
+            this.dlog('Battery has been removed from this inverter');
             return;
         }
 
@@ -259,7 +247,7 @@ export class BaseDevice extends Homey.Device {
         this.batteryDevice = this.getBattery();
 
         if (!this.batteryDevice) {
-            this.log(`${this.device.name} Could not find battery device, retrying`);
+            this.dlog(`${this.device.name} Could not find battery device, retrying`);
 
             this.connectTimeout = this.homey.setTimeout(() => {
                 this.tryConnectBattery();
@@ -278,7 +266,7 @@ export class BaseDevice extends Homey.Device {
         this.inverterDevice = this.getInverter();
 
         if (!this.inverterDevice) {
-            this.log('Could not find inverter device, retrying');
+            this.dlog('Could not find inverter device, retrying');
 
             this.connectTimeout = this.homey.setTimeout(() => {
                 this.tryConnectInverter();
@@ -302,7 +290,7 @@ export class BaseDevice extends Homey.Device {
                 const validationResult = parseConfiguration.validateValue(result, this);
 
                 if (!validationResult.valid) {
-                    this.filteredError('Received invalid value', parseConfiguration.capabilityId, result);
+                    this.derror('Received invalid value', parseConfiguration.capabilityId, result);
 
                     if (!this.isInInvalidState[parseConfiguration.capabilityId]) {
                         const c = this.homey.flow.getDeviceTriggerCard('invalid_value_received');
@@ -365,12 +353,12 @@ export class BaseDevice extends Homey.Device {
         }
 
         if (!this.api) {
-            this.log('ModbusAPI is not initialized');
+            this.dlog('ModbusAPI is not initialized');
             return;
         }
 
         if (this.runningRequest && this.runningRequestCount > 2) {
-            this.log('Cancelling `readRegisters` as there are already too many requests running');
+            this.dlog('Cancelling `readRegisters` as there are already too many requests running');
             return;
         }
 
@@ -385,7 +373,7 @@ export class BaseDevice extends Homey.Device {
 
 
         if (this.runningRequest) {
-            this.log('Request already running, waiting for it to finish');
+            this.dlog('Request already running, waiting for it to finish');
         }
 
         while (this.runningRequest) {
@@ -397,11 +385,13 @@ export class BaseDevice extends Homey.Device {
         try {
             const results = await this.api.readRegisters();
             await this.handleResults(results);
+
+            this.dlog(`Updated ${results.length} statusses`);
         } catch (error: Error | any) {
             if (error.name === 'TransactionTimedOutError') {
-                this.log('Transaction timed out');
+                this.dlog('Transaction timed out');
             } else {
-                this.log('Failed to read registers', JSON.stringify(error));
+                this.dlog('Failed to read registers', JSON.stringify(error));
             }
         } finally {
             this.runningRequest = false;
@@ -410,7 +400,7 @@ export class BaseDevice extends Homey.Device {
             const interval = this.isAvailable ? Math.max(refreshInterval, 2) * 1000 : 60000;
 
             if (!this.isAvailable) {
-                this.log('Device is not reachable, retrying in 60 seconds');
+                this.dlog('Device is not reachable, retrying in 60 seconds');
             }
 
             if (!this.isStopping) {
@@ -423,7 +413,7 @@ export class BaseDevice extends Homey.Device {
      * onAdded is called when the user adds the device, called just after pairing.
      */
     async onAdded() {
-        this.filteredLog('ModbusDevice has been added');
+        this.dlog('ModbusDevice has been added');
     }
 
     /**
@@ -445,23 +435,29 @@ export class BaseDevice extends Homey.Device {
         newSettings: { [key: string]: boolean | string | number | undefined | null };
         changedKeys: string[];
     }): Promise<string | void> {
-        this.filteredLog('ModbusDevice settings where changed');
+        this.dlog('ModbusDevice settings where changed');
 
         if (this.readRegisterTimeout) {
             clearTimeout(this.readRegisterTimeout);
         }
 
-        if (this.enabled !== undefined) {
-            this.enabled = newSettings['enabled'] as boolean;
-        }
+        const enabled = newSettings['enabled'] as boolean;
 
-        if (this.enabled) {
-            this.filteredLog('ModbusDevice is enabled');
+        if (enabled) {
+            this.dlog('ModbusDevice is enabled');
+
+            const { battery } = this.getData();
             this.isStopping = false;
             await this.setAvailable();
+
             await this.setApi();
+
+            if (!battery) {
+                this.readRegisters();
+            }
+
         } else {
-            this.filteredLog('ModbusDevice is disabled');
+            this.dlog('ModbusDevice is disabled');
             await this.setUnavailable('Device is disabled');
             this.isStopping = true;
         }
@@ -473,7 +469,7 @@ export class BaseDevice extends Homey.Device {
      * @param {string} name The new name
      */
     async onRenamed(name: string) {
-        this.filteredLog('ModbusDevice was renamed');
+        this.dlog('ModbusDevice was renamed');
     }
 
     /**
@@ -483,7 +479,7 @@ export class BaseDevice extends Homey.Device {
         const { battery, batteryId, id } = this.getData();
 
         if (!battery && batteryId) {
-            this.filteredLog('ModbusDevice has been deleted');
+            this.dlog('ModbusDevice has been deleted');
 
             if (this.readRegisterTimeout) {
                 this.homey.clearTimeout(this.readRegisterTimeout);
@@ -521,7 +517,7 @@ export class BaseDevice extends Homey.Device {
 
 
         if (retryCount > 3) {
-            this.filteredError('Retry count exceeded');
+            this.derror('Retry count exceeded');
             this.runningRequest = false;
             return;
         }
@@ -542,10 +538,10 @@ export class BaseDevice extends Homey.Device {
             delete cleanArgs.device;
         }
 
-        this.filteredLog('callAction', this.device.name, action);
+        this.dlog('callAction', this.device.name, action);
 
         if (!this.api) {
-            this.filteredError('API is not initialized');
+            this.derror('API is not initialized');
             return;
         }
 
@@ -554,7 +550,7 @@ export class BaseDevice extends Homey.Device {
                 await (args.device as BaseDevice).device.callAction(this, action, args, this.api);
                 this.runningRequest = false;
             } catch (error) {
-                this.filteredError('Error calling action', error);
+                this.derror('Error calling action', error);
 
                 await this.homey.setTimeout(
                     () => {
@@ -564,7 +560,7 @@ export class BaseDevice extends Homey.Device {
                 );
             }
         } else {
-            this.filteredError('No args.device.device found');
+            this.derror('No args.device.device found');
         }
     };
 

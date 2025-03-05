@@ -46,10 +46,10 @@ export class BaseDriver extends Homey.Driver {
     pairingDeviceModelId: string | undefined;
     modbusDeviceInformation: ModbusDeviceInformation | undefined;
 
-    public filteredLog(...args: any[]) {
+    public dlog(...args: any[]) {
         this.log(args);
     }
-    public filteredError(...args: any[]) {
+    public derror(...args: any[]) {
         this.log(args);
     }
     /**

@@ -140,13 +140,13 @@ export class ModbusDevice {
         const flowType = SupportedFlowTypes[action as keyof typeof SupportedFlowTypes];
 
         if (!this.supportedFlows?.actions) {
-            origin.filteredError('No supported actions found');
+            origin.derror('No supported actions found');
             return;
         }
 
         const deviceAction = this.supportedFlows.actions[flowType];
         if (!deviceAction) {
-            origin.filteredError('Unsupported action', action);
+            origin.derror('Unsupported action', action);
             return;
         }
 

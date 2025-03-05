@@ -17,8 +17,8 @@ export interface IBaseLogger {
      */
     error(...args: any[]): void;
 
-    filteredLog(...args: any[]): void;
-    filteredError(...args: any[]): void;
+    dlog(...args: any[]): void;
+    derror(...args: any[]): void;
 }
 
 export class Logger implements IBaseLogger {
@@ -27,12 +27,12 @@ export class Logger implements IBaseLogger {
         console.log(...args);
     }
 
-    filteredLog(...args: any[]): void {
+    dlog(...args: any[]): void {
         // eslint-disable-next-line no-console
         console.log(...args);
     }
 
-    filteredError(...args: any[]): void {
+    derror(...args: any[]): void {
         // eslint-disable-next-line no-console
         console.log(...args);
     }

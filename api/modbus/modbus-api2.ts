@@ -53,7 +53,7 @@ export class ModbusAPI2 implements IAPI2 {
                     results.push(...result);
                 }
                 catch (error) {
-                    this.log.error('readRegister input error', error);
+                    this.log.derror('readRegister input error', error);
                 }
             }
 
@@ -62,16 +62,16 @@ export class ModbusAPI2 implements IAPI2 {
                     const result = await this.readBatch(client, batch, RegisterType.Holding);
                     results.push(...result);
                 } catch (error) {
-                    this.log.error('readRegister holding error', error);
+                    this.log.derror('readRegister holding error', error);
                 }
             }
         } catch (error) {
-            this.log.error('readRegisters error', error);
+            this.log.derror('readRegisters error', error);
         } finally {
             this.busy = false;
 
             client?.close(() => {
-                this.log.log('Closing Modbus connection');
+                this.log.dlog('Closing Modbus connection');
             });
         }
 
@@ -86,7 +86,7 @@ export class ModbusAPI2 implements IAPI2 {
         for (const value of values) {
             if (!Buffer.isBuffer(value)) {
                 const valid = validateValue(value, register.dataType);
-                this.log.log('Validating value', value, 'for register', register.address, 'with data type', register.dataType, 'result', valid);
+                this.log.dlog('Validating value', value, 'for register', register.address, 'with data type', register.dataType, 'result', valid);
 
                 if (!valid) {
                     return false;
@@ -94,7 +94,7 @@ export class ModbusAPI2 implements IAPI2 {
             }
         }
 
-        this.log.log('Writing to address', register.address, ':', values);
+        this.log.dlog('Writing to address', register.address, ':', values);
 
         await this.waitInQueue('writeRegisters');
 
@@ -102,15 +102,15 @@ export class ModbusAPI2 implements IAPI2 {
 
         try {
             const result = await client.writeRegisters(register.address, values);
-            this.log.log('Output', result.address);
+            this.log.dlog('Output', result.address);
             return true;
         } catch (error) {
-            this.log.error('Error writing to register', error);
+            this.log.derror('Error writing to register', error);
             return false;
         } finally {
             client.close(() => {
                 this.busy = false;
-                this.log.log('Closing modbus connection');
+                this.log.dlog('Closing modbus connection');
             });
         }
     };
@@ -144,21 +144,21 @@ export class ModbusAPI2 implements IAPI2 {
      * @returns A promise that resolves to a boolean indicating whether the write operation was successful.
      */
     writeBufferRegister = async (register: ModbusRegister, buffer: Buffer): Promise<boolean> => {
-        this.log.log('Writing to register', register.address, buffer, typeof buffer);
+        this.log.dlog('Writing to register', register.address, buffer, typeof buffer);
 
         await this.waitInQueue('writeBufferRegister');
 
         const client = await this.connect();
         try {
             const result = await client.writeRegisters(register.address, buffer);
-            this.log.log('Output', result.address);
+            this.log.dlog('Output', result.address);
         } catch (error) {
-            this.log.error('Error writing to register', error);
+            this.log.derror('Error writing to register', error);
             return false;
         } finally {
             client.close(() => {
                 this.busy = false;
-                this.log.log('Closing modbus connection');
+                this.log.dlog('Closing modbus connection');
             });
         }
 
@@ -183,18 +183,18 @@ export class ModbusAPI2 implements IAPI2 {
                     ? await client.readInputRegisters(register.address, register.length)
                     : await client.readHoldingRegisters(register.address, register.length);
 
-            this.log.filteredLog('Reading address', register.address, ':', data);
+            this.log.dlog('Reading address', register.address, ':', data);
 
             if (data && data.buffer) {
                 return data.buffer;
             }
 
         } catch (err) {
-            this.log.error('Failed to read address', err);
+            this.log.derror('Failed to read address', err);
         } finally {
             client.close(() => {
                 this.busy = false;
-                this.log.log('Closing modbus connection');
+                this.log.dlog('Closing modbus connection');
             });
         }
 
@@ -223,17 +223,17 @@ export class ModbusAPI2 implements IAPI2 {
         const { value, registerType, register, device } = args;
 
         if (device.device === undefined) {
-            this.log.filteredError('Device is undefined');
+            this.log.derror('Device is undefined');
             return;
         }
 
         if (value === undefined || registerType === undefined || !register) {
-            this.log.filteredLog('Wait, something is missing', value, registerType, register);
+            this.log.dlog('Wait, something is missing', value, registerType, register);
             return;
         }
 
         if (!register || !register.address) {
-            this.log.filteredError('Register is undefined');
+            this.log.derror('Register is undefined');
             return;
         }
 
@@ -242,16 +242,16 @@ export class ModbusAPI2 implements IAPI2 {
         const foundRegister = this.device.getRegisterByTypeAndAddress(rType, register.address);
 
         if (!foundRegister) {
-            this.log.filteredError('Register not found');
+            this.log.derror('Register not found');
             return;
         }
 
-        this.log.filteredLog('Device', JSON.stringify(device.device, null, 2));
+        this.log.dlog('Device', JSON.stringify(device.device, null, 2));
 
-        this.log.filteredLog('write_value_to_register', value, registerType, register);
+        this.log.dlog('write_value_to_register', value, registerType, register);
 
         const result = await this.writeRegister(foundRegister, value);
-        this.log.filteredLog('Write result', result);
+        this.log.dlog('Write result', result);
     };
 
     /**
@@ -273,19 +273,19 @@ export class ModbusAPI2 implements IAPI2 {
         const readBuffer = await this.readAddressWithoutConversion(register);
 
         if (readBuffer === undefined) {
-            this.log.filteredError('Failed to read current value');
+            this.log.derror('Failed to read current value');
             return false;
         }
 
         if (readBuffer.length * 8 < bitIndex + bits.length) {
-            this.log.filteredError('Bit index out of range');
+            this.log.derror('Bit index out of range');
             return false;
         }
 
         const byteIndex = readBuffer.length - 1 - Math.floor(bitIndex / 8);
         const startBitIndex = bitIndex % 8;
 
-        this.log.filteredLog('writeBitsToRegister', register.registerType, bits, startBitIndex, byteIndex);
+        this.log.dlog('writeBitsToRegister', register.registerType, bits, startBitIndex, byteIndex);
 
         const result = writeBitsToBuffer(readBuffer, byteIndex, bits, startBitIndex);
 
@@ -297,7 +297,7 @@ export class ModbusAPI2 implements IAPI2 {
 
         const { host, port, timeout, unitId } = this.connection;
 
-        this.log.log('Connecting to Modbus device', host, port, timeout, unitId);
+        this.log.dlog('Connecting to Modbus device', host, port, timeout, unitId);
 
         await client.connectTCP(host, {
             port,
@@ -309,15 +309,15 @@ export class ModbusAPI2 implements IAPI2 {
         client.setTimeout(timeout);
 
         client.on('error', error => {
-            this.log.error(error);
+            this.log.derror(error);
         });
 
         client.on('close', () => {
-            this.log.log('Connection closed');
+            this.log.dlog('Connection closed');
         });
 
         if (client.isOpen) {
-            this.log.log('Modbus connection opened');
+            this.log.dlog('Modbus connection opened');
         }
 
         return client;
@@ -355,14 +355,15 @@ export class ModbusAPI2 implements IAPI2 {
                         })
                     }
                 } else {
-                    this.log.error('Invalid value', value, 'for address', register.address, register.dataType);
+                    this.log.derror('Invalid value', value, 'for address', register.address, register.dataType);
                 }
 
                 startOffset = end;
             }
         } catch (error: any) {
-            this.log.error('Error reading batch', JSON.stringify(error));
-            throw error;
+            if (!error.name || error.name !== 'TransactionTimedOutError') {
+                this.log.derror('Error reading batch', error);
+            }
         }
 
         return result;
@@ -373,7 +374,7 @@ export class ModbusAPI2 implements IAPI2 {
 
         while (this.busy) {
             if (!output) {
-                this.log.log(`Waiting in queue for ${command}`);
+                this.log.dlog(`Waiting in queue for ${command}`);
                 output = true;
             }
 
