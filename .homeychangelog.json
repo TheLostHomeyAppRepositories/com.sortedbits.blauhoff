@@ -247,5 +247,8 @@
   },
   "3.2.6": {
     "en": "Verify connection during pairing"
+  },
+  "3.2.7": {
+    "en": "Better queuing"
   }
 }
