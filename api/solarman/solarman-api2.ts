@@ -14,7 +14,7 @@ import { FrameDefinition } from './models/frame-definition';
 import { Socket } from 'net';
 import { ModbusConnectionOptions } from '../modbus/modbus-api2';
 import { DeviceRepository } from '../../repositories/device-repository/device-repository';
-import { delay } from '../../helpers/delay';
+import { CommandQueue } from '../../helpers/command-queue';
 
 export interface SolarmanConnectionOptions extends ModbusConnectionOptions {
     serial: string;
@@ -28,7 +28,7 @@ export class SolarmanAPI2 implements IAPI2 {
     private runningRequest = false;
     private device: ModbusDevice;
     private frameDefinition: FrameDefinition;
-    private busy: boolean = false;
+    private queue: CommandQueue;
 
     getDevice(): ModbusDevice {
         return this.device;
@@ -53,7 +53,9 @@ export class SolarmanAPI2 implements IAPI2 {
         }
         this.device = result;
 
+        this.queue = new CommandQueue(this.log);
     }
+
     writeValueToRegister(args: any): Promise<void> {
         throw new Error('Method not implemented.');
     }
@@ -212,9 +214,12 @@ export class SolarmanAPI2 implements IAPI2 {
     };
 
     readRegisters = async (): Promise<Array<RegisterOutput>> => {
-        await this.waitInQueue('readRegisters');
-        const results: Array<RegisterOutput> = [];
+        const waitResult = await this.queue.wait('readRegisters', 2);
+        if (!waitResult) {
+            return [];
+        }
 
+        const results: Array<RegisterOutput> = [];
         try {
 
             const inputBatches = createRegisterBatches(this.log, this.device.inputRegisters);
@@ -234,7 +239,7 @@ export class SolarmanAPI2 implements IAPI2 {
         catch (err) {
             this.log.derror(`readRegisters error`, err);
         } finally {
-            this.busy = false;
+            this.queue.setBusy(false);
         }
 
         return results;
@@ -426,18 +431,4 @@ export class SolarmanAPI2 implements IAPI2 {
         return buffer;
     }
 
-    private waitInQueue = async (command: string) => {
-        let output = false;
-
-        while (this.busy) {
-            if (!output) {
-                this.log.dlog(`Waiting in queue for ${command}`);
-                output = true;
-            }
-
-            await delay(500);
-        }
-
-        this.busy = true;
-    }
 }

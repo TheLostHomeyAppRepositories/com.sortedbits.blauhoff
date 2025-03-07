@@ -8,8 +8,8 @@ import { validateValue } from "../../helpers/validate-value";
 import { AccessMode } from "../../repositories/device-repository/models/enum/access-mode";
 import { Logger } from "../../helpers/log";
 import { ModbusDevice } from "../../repositories/device-repository/models/modbus-device";
-import { delay } from "../../helpers/delay";
 import { writeBitsToBuffer } from "../../helpers/bits";
+import { CommandQueue } from "../../helpers/command-queue";
 
 export interface ModbusConnectionOptions {
     host: string;
@@ -19,9 +19,8 @@ export interface ModbusConnectionOptions {
 }
 
 export class ModbusAPI2 implements IAPI2 {
-
     private device: ModbusDevice;
-    private busy: boolean = false;
+    private queue: CommandQueue;
 
     constructor(private deviceId: string, private connection: ModbusConnectionOptions, private log: Logger) {
         const result = DeviceRepository.getInstance().getDeviceById(this.deviceId);
@@ -31,6 +30,7 @@ export class ModbusAPI2 implements IAPI2 {
         }
 
         this.device = result;
+        this.queue = new CommandQueue(this.log);
     }
 
     getDevice(): ModbusDevice {
@@ -63,7 +63,11 @@ export class ModbusAPI2 implements IAPI2 {
     }
 
     readRegisters = async (): Promise<Array<RegisterOutput>> => {
-        await this.waitInQueue('readRegisters');
+        const waitResult = await this.queue.wait('readRegisters', 2);
+        if (!waitResult) {
+            return [];
+        }
+
         const results: Array<RegisterOutput> = [];
 
         let client: ModbusRTU | undefined = undefined;
@@ -93,7 +97,7 @@ export class ModbusAPI2 implements IAPI2 {
         } catch (error) {
             this.log.derror('readRegisters error', error);
         } finally {
-            this.busy = false;
+            this.queue.setBusy(false);
 
             client?.close(() => {
                 this.log.dlog('Closing Modbus connection');
@@ -119,10 +123,9 @@ export class ModbusAPI2 implements IAPI2 {
             }
         }
 
+        this.queue.wait('writeRegisters', 999);
+
         this.log.dlog('Writing to address', register.address, ':', values);
-
-        await this.waitInQueue('writeRegisters');
-
         const client = await this.connect();
 
         try {
@@ -133,8 +136,8 @@ export class ModbusAPI2 implements IAPI2 {
             this.log.derror('Error writing to register', error);
             return false;
         } finally {
+            this.queue.setBusy(false);
             client.close(() => {
-                this.busy = false;
                 this.log.dlog('Closing modbus connection');
             });
         }
@@ -171,7 +174,7 @@ export class ModbusAPI2 implements IAPI2 {
     writeBufferRegister = async (register: ModbusRegister, buffer: Buffer): Promise<boolean> => {
         this.log.dlog('Writing to register', register.address, buffer, typeof buffer);
 
-        await this.waitInQueue('writeBufferRegister');
+        await this.queue.wait('writeBufferRegister', 999);
 
         const client = await this.connect();
         try {
@@ -181,8 +184,8 @@ export class ModbusAPI2 implements IAPI2 {
             this.log.derror('Error writing to register', error);
             return false;
         } finally {
+            this.queue.setBusy(false);
             client.close(() => {
-                this.busy = false;
                 this.log.dlog('Closing modbus connection');
             });
         }
@@ -199,7 +202,7 @@ export class ModbusAPI2 implements IAPI2 {
      * @returns A promise that resolves to the read data or undefined if the read operation failed.
      */
     readAddressWithoutConversion = async (register: ModbusRegister): Promise<Buffer | undefined> => {
-        await this.waitInQueue('writeBufferRegister');
+        await this.queue.wait('writeBufferRegister', 999);
 
         const client = await this.connect();
         try {
@@ -217,8 +220,9 @@ export class ModbusAPI2 implements IAPI2 {
         } catch (err) {
             this.log.derror('Failed to read address', err);
         } finally {
+            this.queue.setBusy(false);
+
             client.close(() => {
-                this.busy = false;
                 this.log.dlog('Closing modbus connection');
             });
         }
@@ -393,19 +397,4 @@ export class ModbusAPI2 implements IAPI2 {
 
         return result;
     };
-
-    private waitInQueue = async (command: string) => {
-        let output = false;
-
-        while (this.busy) {
-            if (!output) {
-                this.log.dlog(`Waiting in queue for ${command}`);
-                output = true;
-            }
-
-            await delay(500);
-        }
-
-        this.busy = true;
-    }
 }

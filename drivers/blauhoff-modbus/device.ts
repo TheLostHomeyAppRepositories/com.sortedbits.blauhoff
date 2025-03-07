@@ -151,7 +151,7 @@ export class BlauhoffDevice extends Homey.Device {
             await this.setApi();
 
             if (!battery) {
-                this.readRegisters();
+                await this.readRegisters();
             }
 
         } else {
@@ -497,12 +497,7 @@ export class BlauhoffDevice extends Homey.Device {
     private readRegisters = async () => {
         const { battery } = this.getData();
 
-        if (battery) {
-            return;
-        }
-
-        if (!this.api) {
-            this.dlog('ModbusAPI is not initialized');
+        if (battery || !this.api) {
             return;
         }
 
@@ -518,22 +513,11 @@ export class BlauhoffDevice extends Homey.Device {
             this.readRegisterTimeout = undefined;
         }
 
-        const { refreshInterval } = this.getSettings();
-
         if (this.runningRequest) {
             this.dlog('Request already running, waiting for it to finish');
         }
 
-        const maxWaitTime = 10000; // Maximum wait time of 10 seconds
-        const startTime = Date.now();
-
         while (this.runningRequest) {
-            if (Date.now() - startTime > maxWaitTime) {
-                this.dlog('Timeout waiting for the previous request to finish');
-                this.runningRequestCount--;
-                return;
-            }
-
             await delay(500);
         }
 
@@ -554,6 +538,7 @@ export class BlauhoffDevice extends Homey.Device {
             this.runningRequest = false;
             this.runningRequestCount--;
 
+            const { refreshInterval } = this.getSettings();
             const interval = this.isAvailable ? Math.max(refreshInterval, 2) * 1000 : 60000;
 
             if (!this.isAvailable) {
