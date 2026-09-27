@@ -107,12 +107,41 @@ export class ModbusDevice {
         const inputRegisters = this.getInputRegisters(deviceType).filter(r => r.accessMode !== AccessMode.WriteOnly).flatMap(r => r.parseConfigurations.map(p => p.capabilityId));
         const holdingRegisters = this.getHoldingRegisters(deviceType).filter(r => r.accessMode !== AccessMode.WriteOnly).flatMap(r => r.parseConfigurations.map(p => p.capabilityId));
         const stateCapabilities = this.stateCalculations.filter(s => s.deviceTypes.includes(deviceType)).map(s => s.capabilityId);
+        const writableCapabilities = this.getWritableCapabilities(deviceType).map(w => w.capabilityId);
 
-        const result = inputRegisters.concat(holdingRegisters).concat(stateCapabilities)
+        const result = inputRegisters.concat(holdingRegisters).concat(stateCapabilities).concat(writableCapabilities)
         result.push('readable_boolean.device_status')
         result.push('date.record');
         return result;
     }
+
+    /**
+     * Capabilities that a device model exposes as genuinely settable in
+     * Homey (e.g. `target_power`), on top of whatever register reads give
+     * it. Empty by default, so this is a no-op for every model that
+     * doesn't declare one — only a model that populates
+     * `supportedCapabilityListeners` for the same id actually gets a
+     * working write path (see BlauhoffDevice, which registers a
+     * capability listener for each one generically).
+     *
+     * @type {{ capabilityId: string; deviceTypes: DeviceType[] }[]}
+     * @memberof Device
+     */
+    public writableCapabilities: { capabilityId: string; deviceTypes: DeviceType[]; options?: object }[] = [];
+
+    public getWritableCapabilities = (deviceType: DeviceType): { capabilityId: string; deviceTypes: DeviceType[]; options?: object }[] => {
+        return this.writableCapabilities.filter(w => w.deviceTypes.includes(deviceType));
+    }
+
+    /**
+     * Handlers for the capabilities listed in `writableCapabilities`,
+     * called generically by BlauhoffDevice whenever Homey (or another
+     * app, or the user) sets that capability's value.
+     *
+     * @type {{ [capabilityId: string]: (origin: IBaseLogger, value: any, api: IAPI2) => Promise<void> }}
+     * @memberof Device
+     */
+    public supportedCapabilityListeners: { [capabilityId: string]: (origin: IBaseLogger, value: any, api: IAPI2) => Promise<void> } = {};
 
     /**
      * The supported flows of the device

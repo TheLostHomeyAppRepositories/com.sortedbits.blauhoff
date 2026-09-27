@@ -453,6 +453,25 @@ export class BlauhoffDevice extends Homey.Device {
                 await deprecateCapability(this, capability);
             }
         }
+
+        // Register a capability listener for any capability the device
+        // model declared genuinely settable (e.g. target_power). This is
+        // a no-op for every model that doesn't populate
+        // writableCapabilities/supportedCapabilityListeners - see
+        // ModbusDevice and, for the one model that does, AforeAFXKTH.
+        for (const writable of this.device.getWritableCapabilities(deviceType)) {
+            const handler = this.device.supportedCapabilityListeners[writable.capabilityId];
+            if (!handler) {
+                this.derror('No capability listener implemented for', writable.capabilityId);
+                continue;
+            }
+            if (writable.options) {
+                await this.setCapabilityOptions(writable.capabilityId, writable.options);
+            }
+            this.registerCapabilityListener(writable.capabilityId, async (value: any) => {
+                await handler(this, value, this.getApi());
+            });
+        }
     };
 
     private getApi = (): IAPI2 => {
