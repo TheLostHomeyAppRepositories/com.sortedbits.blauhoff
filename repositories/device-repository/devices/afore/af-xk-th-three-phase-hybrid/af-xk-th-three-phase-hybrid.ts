@@ -33,6 +33,20 @@ export class AforeAFXKTH extends ModbusDevice {
             },
         };
 
+        // Genuine target_power / target_power_mode support, on top of the
+        // set_charge_command / set_ems_mode flow actions above: the same
+        // registers, just reachable through the standard Homey Energy
+        // capabilities so an EMS app can drive this battery directly
+        // instead of needing a Blauhoff-specific mapping.
+        this.writableCapabilities = [
+            { capabilityId: 'target_power', deviceTypes: [DeviceType.BATTERY], options: { min: -22000, max: 22000, step: 100 } },
+            { capabilityId: 'target_power_mode', deviceTypes: [DeviceType.BATTERY] },
+        ];
+        this.supportedCapabilityListeners = {
+            target_power: this.onSetTargetPower,
+            target_power_mode: this.onSetTargetPowerMode,
+        };
+
         this.stateCalculations = [];
 
         this.addInputRegisters(inputRegisters);
@@ -85,6 +99,82 @@ export class AforeAFXKTH extends ModbusDevice {
             origin.log('Command and power output', emsModeOutput, commandOutput, powerOutput);
         } catch (error) {
             origin.error('Error writing to register', error);
+        }
+    };
+
+    /**
+     * target_power capability listener. Only takes effect once
+     * target_power_mode is 'homey' (Command mode, register 2500 = 4) -
+     * otherwise the inverter's own EMS logic ignores this setpoint, the
+     * same as any other target_power device on Homey.
+     *
+     * Positive = charge, negative = discharge (Homey's own convention):
+     * the direction is entirely the sign of the value written to the
+     * power register, register 2501 is just an active/paused flag and is
+     * always set to active here, same as set_charge_command's 'charge'
+     * option.
+     */
+    onSetTargetPower = async (origin: IBaseLogger, value: number, client: IAPI2): Promise<void> => {
+        const commandRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2501);
+        const powerRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2502);
+
+        if (commandRegister === undefined || powerRegister === undefined) {
+            origin.error('Register not found');
+            return;
+        }
+
+        if (value < -22000 || value > 22000) {
+            origin.error('target_power out of range', value);
+            return;
+        }
+
+        const commandBuffer = Buffer.from('00aa', 'hex');
+        const powerBuffer = bufferForDataType(powerRegister.dataType, value);
+
+        try {
+            const powerOutput = await client.writeBufferRegister(powerRegister, powerBuffer);
+            const commandOutput = await client.writeBufferRegister(commandRegister, commandBuffer);
+
+            origin.log('target_power set to', value, powerOutput, commandOutput);
+        } catch (error) {
+            origin.error('Error writing target_power', error);
+        }
+    };
+
+    /**
+     * target_power_mode capability listener.
+     *
+     * 'homey': take control. Writes a safe 0 W hold first, then switches
+     * EMS mode to Command mode (register 2500 = 4) - setpoint before
+     * mode, same order set_charge_command already uses.
+     * 'device': release control back to the inverter's own Self-use mode
+     * (register 2500 = 0).
+     */
+    onSetTargetPowerMode = async (origin: IBaseLogger, value: string, client: IAPI2): Promise<void> => {
+        const emsRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2500);
+        const commandRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2501);
+        const powerRegister = this.getRegisterByTypeAndAddress(RegisterType.Holding, 2502);
+
+        if (emsRegister === undefined || commandRegister === undefined || powerRegister === undefined) {
+            origin.error('Register not found');
+            return;
+        }
+
+        try {
+            if (value === 'homey') {
+                const powerBuffer = bufferForDataType(powerRegister.dataType, 0);
+                const commandBuffer = Buffer.from('00aa', 'hex');
+
+                await client.writeBufferRegister(powerRegister, powerBuffer);
+                await client.writeBufferRegister(commandRegister, commandBuffer);
+                await client.writeRegister(emsRegister, 4);
+            } else {
+                await client.writeRegister(emsRegister, 0);
+            }
+
+            origin.log('target_power_mode set to', value);
+        } catch (error) {
+            origin.error('Error writing target_power_mode', error);
         }
     };
 
